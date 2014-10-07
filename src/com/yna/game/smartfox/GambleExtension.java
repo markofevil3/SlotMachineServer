@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import com.yna.game.smartfox.handler.SlotMachineHandler;
 import com.yna.game.smartfox.handler.TienLenMienBacHandler;
 import com.yna.game.smartfox.handler.UserRequestHandler;
 import com.yna.game.task.TaskManager;
@@ -24,6 +25,7 @@ public class GambleExtension extends SFSExtension {
 		
 		addRequestHandler(GameId.TLMB, TienLenMienBacHandler.class);
 		addRequestHandler(GameId.USER, UserRequestHandler.class);
+		addRequestHandler(GameId.SLOT_MACHINE, SlotMachineHandler.class);
 
 		addEventHandler(SFSEventType.USER_LOGIN, GambleEventHandler.class);
 		addEventHandler(SFSEventType.USER_JOIN_ZONE, GambleEventHandler.class);

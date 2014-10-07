@@ -7,5 +7,6 @@ public class GameId {
 	public static final String TALA = "TaLa";
 	public static final String POKER = "Poker";
 	public static final String CHAN = "Chan";
+	public static final String SLOT_MACHINE = "SlotMachine";
 	
 }

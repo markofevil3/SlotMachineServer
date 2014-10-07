@@ -14,6 +14,10 @@ public class Command {
 	public static final String QUIT = "quit";
 	public static final String UPDATE = "update";
 	
+	// Slot machine command
+	public static final String SLOT_JOIN_ROOM = "slotJoinRoom";
+
+	
 	// User command
 	public static final String REGISTER = "register";
 	public static final String LOAD_LEADERBOARD = "loadLeaderboard";
