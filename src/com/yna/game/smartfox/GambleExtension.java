@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import com.yna.game.slotmachine.models.SlotCombinations;
 import com.yna.game.smartfox.handler.SlotMachineHandler;
 import com.yna.game.smartfox.handler.TienLenMienBacHandler;
 import com.yna.game.smartfox.handler.UserRequestHandler;
@@ -18,6 +19,7 @@ public class GambleExtension extends SFSExtension {
 	@Override
 	public void init() {
 		TienLenManager.init(this);
+		SlotCombinations.Init();
 		trace("GambleExtension Init");
 		SmartFoxServer sfs = SmartFoxServer.getInstance();
 		sfs.getEventManager().setThreadPoolSize(20);
