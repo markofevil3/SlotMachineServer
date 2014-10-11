@@ -31,20 +31,17 @@ import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
 import com.yna.game.smartfox.GameId;
 import com.yna.game.slotmachine.models.Command;
+import com.yna.game.slotmachine.models.GameType;
 import com.yna.game.slotmachine.models.SlotCombinations;
 
 @MultiHandler
 public class SlotMachineHandler extends ClientRequestHandler {
 	
-	private final String FRUIT_LOBBY_ROOM = "fruitLobby";
-	private final String FRUIT_ROOM_GROUP = "fruitRooms";
-	private final String FRUIT_ROOM_NAME = "fRoom";
 	private final int ROOM_NAME_LENGTH = 5;
 	private final int MAX_USERS_PER_ROOM = 5;
 	
 	private User exceptUser = null;
 	private JSONObject jsonData = null;
-	private Room lobbyRoom = null;
 	
 	@Override
 	protected void handleRequest(String commandId, User player, ISFSObject params, JSONObject out) {
@@ -74,6 +71,9 @@ public class SlotMachineHandler extends ClientRequestHandler {
 		break;
 		case Command.SLOT_PLAY:
 			handlePlayCommand(player, jsonData, out);
+		break;
+		case Command.SLOT_LEAVE:
+			handleLeaveCommand(player, jsonData, out);
 		break;
 //		case Command.CREATE:
 //			handleCreateCommand(player, jsonData, out);
@@ -110,10 +110,10 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private void handleJoinRoomCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
+			String gameType = jsonData.getString("gameType");
 			// Join user to lobby
-			if (lobbyRoom == null) {
-				lobbyRoom = zone.getRoomByName(FRUIT_LOBBY_ROOM);
-			}
+			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
+
 			sfsApi.joinRoom(player, lobbyRoom, null, false, null, true, true);
 			// Find available game room
 		// Prepare match expression
@@ -121,31 +121,37 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			                    (RoomProperties.HAS_FREE_PLAYER_SLOTS, BoolMatch.EQUALS, true);
 			  
 			// Search Rooms
-			List<Room> joinableRooms = sfsApi.findRooms(zone.getRoomListFromGroup(FRUIT_ROOM_GROUP), exp, 1);
+			List<Room> joinableRooms = sfsApi.findRooms(zone.getRoomListFromGroup(GameType.GetRoomGroup(gameType)), exp, 1);
 			if (joinableRooms.size() > 0) {
 				sfsApi.joinRoom(player, joinableRooms.get(0), null, false, null, true, true);
+				player.setVariable(new SFSUserVariable("gRoomId", joinableRooms.get(0).getName(), true));
 				out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.NULL);
 			} else {
-				out.put(ErrorCode.PARAM, createSFSGameRoom(player));
+				out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType));
 			}
+			out.put("gameType", gameType);
 		} catch (Exception exception) {
 			trace("handleJoinRoomCommand:" + exception.toString());
 		}
 	}
 	
-	private int createSFSGameRoom(User player) {
+	private int createSFSGameRoom(User player, String gameType) {
 		int errorCode = ErrorCode.SlotMachine.NULL;
-		String roomName = FRUIT_ROOM_NAME + Util.generateRandomString(ROOM_NAME_LENGTH);
+		String roomName = GameType.GetRoomCode(gameType) + Util.generateRandomString(ROOM_NAME_LENGTH);
 
 		while (zone.getRoomByName(roomName) != null) {
-			roomName = FRUIT_ROOM_NAME + Util.generateRandomString(ROOM_NAME_LENGTH);
+			roomName = GameType.GetRoomCode(gameType) + Util.generateRandomString(ROOM_NAME_LENGTH);
 		}
 		CreateRoomSettings roomSettings = new CreateRoomSettings();
 		roomSettings.setMaxUsers(MAX_USERS_PER_ROOM);
-		roomSettings.setGroupId(FRUIT_ROOM_GROUP);
+		roomSettings.setGroupId(GameType.GetRoomGroup(gameType));
 		roomSettings.setName(roomName);
 		roomSettings.setAutoRemoveMode(SFSRoomRemoveMode.WHEN_EMPTY);
-
+		try {
+			player.setVariable(new SFSUserVariable("gRoomId", roomName, true));
+		} catch (SFSVariableException e) {
+			trace("CreateSFSRoom:SFSVariableException:" + e.toString());
+		}
 		try {
 			Room createdRoom = sfsApi.createRoom(zone, roomSettings, null, true, null);
 			sfsApi.joinRoom(player, createdRoom, null, false, null, true, true);
@@ -162,10 +168,8 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			int betPerLine = jsonData.getInt("betPerLine");
 			int numLines = jsonData.getInt("numLines");
 			int totalCost = betPerLine * numLines;
-			if (lobbyRoom == null) {
-				trace("handlePlayCommand---");
-				lobbyRoom = zone.getRoomByName(FRUIT_LOBBY_ROOM);
-			}
+			String gameType = jsonData.getString("gameType");
+			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 			trace("handlePlayCommand " + lobbyRoom.getVariable("jackpot"));
 			RoomVariable jackpot = new SFSRoomVariable("jackpot", lobbyRoom.getVariable("jackpot").getIntValue() + totalCost);
 			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
@@ -174,13 +178,23 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			} catch (SFSVariableException e) {
 				trace("handlePlayCommand setVariable:" + e.toString());
 			}
-			String gameType = jsonData.getString("gameType");
 			int[] randomItems = SlotCombinations.GenerateRandomItems();
 			out.put("items", randomItems);
 			out.put("winResults", SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine));
 		} catch (JSONException e) {
 			trace("handlePlayCommand:" + e.toString());
 		}
-
+	}
+	
+	private void handleLeaveCommand(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			String gameType = jsonData.getString("gameType");
+			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
+			sfsApi.leaveRoom(player, lobbyRoom, false, false);
+			Room gameRoom = zone.getRoomByName(player.getVariable("gRoomId").getStringValue());
+			sfsApi.leaveRoom(player, gameRoom, true, false);
+		} catch (Exception exception) {
+			trace("removeUserOutOfSFSRoom:Exception:" + exception.toString());
+		}
 	}
 }
