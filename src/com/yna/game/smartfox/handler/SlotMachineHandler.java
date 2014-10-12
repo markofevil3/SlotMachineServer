@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -30,6 +31,7 @@ import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
 import com.yna.game.smartfox.GameId;
+import com.yna.game.smartfox.UserManager;
 import com.yna.game.slotmachine.models.Command;
 import com.yna.game.slotmachine.models.GameType;
 import com.yna.game.slotmachine.models.SlotCombinations;
@@ -114,7 +116,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			// Join user to lobby
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 
-			sfsApi.joinRoom(player, lobbyRoom, null, false, null, true, true);
+			sfsApi.joinRoom(player, lobbyRoom, null, false, null, true, false);
 			// Find available game room
 		// Prepare match expression
 			MatchExpression exp = new MatchExpression(RoomProperties.IS_GAME, BoolMatch.EQUALS, true).and
@@ -123,19 +125,38 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			// Search Rooms
 			List<Room> joinableRooms = sfsApi.findRooms(zone.getRoomListFromGroup(GameType.GetRoomGroup(gameType)), exp, 1);
 			if (joinableRooms.size() > 0) {
-				sfsApi.joinRoom(player, joinableRooms.get(0), null, false, null, true, true);
-				player.setVariable(new SFSUserVariable("gRoomId", joinableRooms.get(0).getName(), true));
+				Room joinRoom = joinableRooms.get(0);
+				sfsApi.joinRoom(player, joinRoom, null, false, null, true, false);
+				player.setVariable(new SFSUserVariable("gRoomId", joinRoom.getName(), true));
 				out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.NULL);
+				// generate other user data to send back
+				JSONArray players = new JSONArray();
+				JSONObject tempObj;
+				User otherPlayer;
+				List<User> otherPlayers =	joinRoom.getPlayersList();
+				for (int i = 0; i < otherPlayers.size(); i++) {
+					tempObj = new JSONObject();
+					otherPlayer = otherPlayers.get(i);
+					tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
+					tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
+					tempObj.put("username", otherPlayer.getName());
+					players.put(tempObj);
+				}
+				out.put("otherPlayers", players);
+				out.put("roomId", joinRoom.getName());
 			} else {
-				out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType));
+				out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType, out));
+				// put empty other players for new room
+				out.put("otherPlayers", new JSONArray());
 			}
+			
 			out.put("gameType", gameType);
 		} catch (Exception exception) {
 			trace("handleJoinRoomCommand:" + exception.toString());
 		}
 	}
 	
-	private int createSFSGameRoom(User player, String gameType) {
+	private int createSFSGameRoom(User player, String gameType, JSONObject out) {
 		int errorCode = ErrorCode.SlotMachine.NULL;
 		String roomName = GameType.GetRoomCode(gameType) + Util.generateRandomString(ROOM_NAME_LENGTH);
 
@@ -147,17 +168,15 @@ public class SlotMachineHandler extends ClientRequestHandler {
 		roomSettings.setGroupId(GameType.GetRoomGroup(gameType));
 		roomSettings.setName(roomName);
 		roomSettings.setAutoRemoveMode(SFSRoomRemoveMode.WHEN_EMPTY);
-		try {
-			player.setVariable(new SFSUserVariable("gRoomId", roomName, true));
-		} catch (SFSVariableException e) {
-			trace("CreateSFSRoom:SFSVariableException:" + e.toString());
-		}
+		roomSettings.setGame(true);
 		try {
 			Room createdRoom = sfsApi.createRoom(zone, roomSettings, null, true, null);
-			sfsApi.joinRoom(player, createdRoom, null, false, null, true, true);
+			sfsApi.joinRoom(player, createdRoom, null, false, null, true, false);
+			player.setVariable(new SFSUserVariable("gRoomId", roomName, true));
+			out.put("roomId", createdRoom.getName());
 		} catch (Exception exception) {
 			trace("CreateSFSRoom:Exception:" + exception.toString());
-			errorCode = ErrorCode.Tienlen.UNKNOWN;
+			errorCode = ErrorCode.SlotMachine.UNKNOWN;
 		}
 		trace("createSFSGameRoom");
 		return errorCode;
@@ -173,17 +192,27 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			trace("handlePlayCommand " + lobbyRoom.getVariable("jackpot"));
 			RoomVariable jackpot = new SFSRoomVariable("jackpot", lobbyRoom.getVariable("jackpot").getIntValue() + totalCost);
 			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
-			try {
-				lobbyRoom.setVariable(jackpot);
-			} catch (SFSVariableException e) {
-				trace("handlePlayCommand setVariable:" + e.toString());
-			}
+			lobbyRoom.setVariable(jackpot);
 			int[] randomItems = SlotCombinations.GenerateRandomItems();
+			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine);
+			JSONArray winningGold = winResults.getJSONArray("winningGold");
+			int totalWin = 0; 
+			for (int i = 0; i < winningGold.length(); i++) {
+				totalWin += winningGold.getInt(i);
+			}
+			updatePlayerCash(player, totalWin - totalCost);
 			out.put("items", randomItems);
-			out.put("winResults", SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine));
-		} catch (JSONException e) {
+			out.put("winResults", winResults);
+			out.put("cost", totalCost);
+		} catch (JSONException | SFSVariableException e) {
 			trace("handlePlayCommand:" + e.toString());
 		}
+	}
+	
+	private void updatePlayerCash(User player, int val) {
+		UserManager.updatePlayerCash(player.getName(), val);
+		UserVariable variable = new SFSUserVariable("cash", Math.max(0, player.getVariable("cash").getIntValue() + val));
+		sfsApi.setUserVariables(player, Arrays.asList(variable), true, false);
 	}
 	
 	private void handleLeaveCommand(User player, JSONObject jsonData, JSONObject out) {

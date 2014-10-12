@@ -9,6 +9,10 @@ import org.json.JSONObject;
 
 import com.smartfoxserver.bitswarm.sessions.Session;
 import com.smartfoxserver.v2.api.ISFSApi;
+import com.smartfoxserver.v2.api.SFSApi;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
+import com.smartfoxserver.v2.exceptions.SFSVariableException;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 
@@ -64,6 +68,16 @@ public class UserManager {
 			// TO DO: Find user in database
 		}
 		return user;
+	}
+	
+	public static void updatePlayerCash(String username, int updateVal) {
+		try {
+			JSONObject userData = getOnlineUser(username);
+			int newVal = Math.max(0 ,userData.getInt("cash") + updateVal);
+			userData.put("cash", newVal);
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
 	}
 	
 	// FAKE for leaderboard - should have new function for leaderboard

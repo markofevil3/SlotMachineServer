@@ -44,6 +44,7 @@ public class GambleExtension extends SFSExtension {
 		removeEventHandler(SFSEventType.PUBLIC_MESSAGE);
 		removeRequestHandler(GameId.TLMB);
 		removeRequestHandler(GameId.USER);
+		removeRequestHandler(GameId.SLOT_MACHINE);
 		TienLenManager.destroy();
 	}
 }

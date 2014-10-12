@@ -1,12 +1,17 @@
 package com.yna.game.smartfox;
 
+import java.util.ArrayList;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSEventParam;
+import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
+import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.smartfoxserver.v2.exceptions.SFSErrorCode;
 import com.smartfoxserver.v2.exceptions.SFSErrorData;
 import com.smartfoxserver.v2.exceptions.SFSException;
@@ -23,6 +28,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
 		JSONObject jsonData;
+		User user;
 		switch (event.getType()) {
 		case USER_LOGIN:
 			String username = (String) event.getParameter(SFSEventParam.LOGIN_NAME);
@@ -62,12 +68,17 @@ public class GambleEventHandler extends BaseServerEventHandler {
 	      throw new SFSLoginException("%d", ed);
 			}
 		case USER_JOIN_ZONE:
+			user = (User)event.getParameter(SFSEventParam.USER);
+			if (user != null) {
+				setUserVariables(user, UserManager.getOnlineUser(user.getName()));
+			}
+			trace("##handleServerEvent - USER_JOIN_ZONE: " + user);
 			break;
 		case USER_DISCONNECT:
 				trace("##handleServerEvent - USER_DISCONNECT: " + (String) event.getParameter(SFSEventParam.LOGIN_NAME));
 			break;
 		case PUBLIC_MESSAGE:
-			User user = (User)event.getParameter(SFSEventParam.USER);
+			user = (User)event.getParameter(SFSEventParam.USER);
 			String message = (String)event.getParameter(SFSEventParam.MESSAGE);
 			ISFSObject sfsObjData = (ISFSObject)event.getParameter(SFSEventParam.OBJECT);
 			try {
@@ -79,11 +90,34 @@ public class GambleEventHandler extends BaseServerEventHandler {
 
 			break;
 		case USER_LEAVE_ROOM:
+			trace("##handleServerEvent - USER_LEAVE_ROOM: " + (String) event.getParameter(SFSEventParam.LOGIN_NAME));
 			break;
 		case ROOM_REMOVED:
+			trace("##handleServerEvent - ROOM_REMOVED: " + (Room)event.getParameter(SFSEventParam.ROOM));
 			break;
 		default:
 			break;
+		}
+	}
+	
+	private void setUserVariables(User player, JSONObject jsonData) {
+		try {
+			trace("setUserVariables:"+ player + " | " + jsonData.toString());
+			ArrayList<UserVariable> variables = new ArrayList<UserVariable>();
+			SFSUserVariable variable = new SFSUserVariable("displayName", jsonData.getString("displayName"), false);
+			variables.add(variable);
+			variable = new SFSUserVariable("cash", jsonData.getInt("cash"), false);
+			variables.add(variable);
+			player.setVariables(variables);
+		} catch (Exception exception) {
+			trace("setUserVariables:Exception:" + exception.toString());
+		}
+	}
+	
+	private void resetUserVariables(User player) {
+		try {
+		} catch (Exception exception) {
+			trace("resetUserGlobalRoomName:Exception:" + exception.toString());
 		}
 	}
 }

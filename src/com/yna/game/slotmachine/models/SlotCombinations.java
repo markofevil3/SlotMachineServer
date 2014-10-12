@@ -2,6 +2,7 @@ package com.yna.game.slotmachine.models;
 
 import java.util.Random;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -137,7 +138,7 @@ public class SlotCombinations {
       winningGold[i] = PAYOUTS[winningLineType[i]][winningLineCount[i] - 1] * betPerLine;
     }
     try {
-			results.put("winningGold", winningGold);
+			results.put("winningGold", new JSONArray(winningGold));
 	    results.put("isJackpot", isJackpot);
 		} catch (JSONException e) {
 			Util.log("CalculateCombination JSONObject error: " + e.toString());
