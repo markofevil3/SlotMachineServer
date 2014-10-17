@@ -2,7 +2,9 @@ package com.yna.game.smartfox;
 
 import org.json.JSONObject;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.annotations.MultiHandler;
+import com.smartfoxserver.v2.api.ISFSBuddyApi;
 import com.smartfoxserver.v2.api.SFSApi;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.Zone;
@@ -17,7 +19,6 @@ public class ClientRequestHandler extends BaseClientRequestHandler {
 	protected Zone zone;
 	protected SFSExtension extension;
 	protected SFSApi sfsApi;
-	
 	@Override
 	public void handleClientRequest(User player, ISFSObject params) {
 		trace("handleClientRequest:" + player);

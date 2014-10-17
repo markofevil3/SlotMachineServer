@@ -2,8 +2,12 @@ package com.yna.game.smartfox.handler;
 
 import org.json.JSONObject;
 
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.annotations.MultiHandler;
+import com.smartfoxserver.v2.api.ISFSBuddyApi;
+import com.smartfoxserver.v2.buddylist.BuddyListManager;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
@@ -36,21 +40,21 @@ public class UserRequestHandler extends ClientRequestHandler {
 		
 		switch (commandId) {
 		case Command.LOAD_LEADERBOARD:
-			handleLoadLeaderboardCommand(jsonData, out);
+			handleLoadLeaderboardCommand(player, jsonData, out);
 			break;
 		case Command.LOAD_FRIEND_LIST:
-			handleLoadFriendListCommand(jsonData, out);
+			handleLoadFriendListCommand(player, jsonData, out);
 			break;
 		case Command.LOAD_USER_INFO:
-			handleLoadUserInfoCommand(jsonData, out);
+			handleLoadUserInfoCommand(player, jsonData, out);
 			break;
 		case Command.ADD_FRIEND:
-			handleAddFriendCommand(jsonData, out);
+			handleAddFriendCommand(player, jsonData, out);
 			break;
 		}
 	}
 	
-	private void handleLoadLeaderboardCommand(JSONObject jsonData, JSONObject out) {
+	private void handleLoadLeaderboardCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			// TO DO: Get top user by type - should cache
 			out.put("users", UserManager.getAllUsers());
@@ -60,15 +64,18 @@ public class UserRequestHandler extends ClientRequestHandler {
 		}
 	}
 	
-	private void handleLoadFriendListCommand(JSONObject jsonData, JSONObject out) {
+	private void handleLoadFriendListCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			out.put("friends", UserManager.getUsers(jsonData.getJSONArray("friends")));
+			BuddyListManager buddyListManager = zone.getBuddyListManager();
+			String friends = buddyListManager.getBuddyList(player.getName()).toString();
+			trace("handleLoadFriendListCommand " + friends);
+//			out.put("friends", UserManager.getUsers(jsonData.getJSONArray("friends")));
 		} catch (Exception exception) {
 			trace("handleLoadFriendListCommand Exception:" + exception.toString());
 		}
 	}
 	
-	private void handleLoadUserInfoCommand(JSONObject jsonData, JSONObject out) {
+	private void handleLoadUserInfoCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			out.put("user", UserManager.getUser(jsonData.getString("username")));
 		} catch (Exception exception) {
@@ -76,9 +83,14 @@ public class UserRequestHandler extends ClientRequestHandler {
 		}
 	}
 	
-	private void handleAddFriendCommand(JSONObject jsonData, JSONObject out) {
+	private void handleAddFriendCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			UserManager.addFriend(jsonData.getString("username"), jsonData.getString("fUsername"), out);
+			ISFSBuddyApi buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+			buddyApi.initBuddyList(player, false);
+			buddyApi.addBuddy(player, jsonData.getString("fUsername"), false, true, false);
+			out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+			out.put("fUsername", jsonData.getString("fUsername"));
+//			UserManager.addFriend(jsonData.getString("username"), jsonData.getString("fUsername"), out);
 		} catch (Exception exception) {
 			trace("handleLoadUserInfoCommand:JSONObject Exception:" + exception.toString());
 		}

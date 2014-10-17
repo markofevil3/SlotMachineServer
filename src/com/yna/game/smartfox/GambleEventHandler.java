@@ -1,10 +1,15 @@
 package com.yna.game.smartfox;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.smartfoxserver.v2.SmartFoxServer;
+import com.smartfoxserver.v2.api.ISFSBuddyApi;
+import com.smartfoxserver.v2.buddylist.BuddyVariable;
+import com.smartfoxserver.v2.buddylist.SFSBuddyVariable;
 import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSEventParam;
 import com.smartfoxserver.v2.entities.Room;
@@ -24,6 +29,7 @@ import com.yna.game.common.Util;
 public class GambleEventHandler extends BaseServerEventHandler {
 
 	private static final int NEW_USER_CASH = 100000;
+	protected ISFSBuddyApi buddyApi;
 	
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
@@ -94,6 +100,14 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			break;
 		case ROOM_REMOVED:
 			trace("##handleServerEvent - ROOM_REMOVED: " + (Room)event.getParameter(SFSEventParam.ROOM));
+			break;
+		case BUDDY_LIST_INIT:
+			user = (User)event.getParameter(SFSEventParam.USER);
+			buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
+			vars.add( new SFSBuddyVariable("displayName", user.getVariable("displayName").getStringValue()));
+			vars.add( new SFSBuddyVariable("cash", user.getVariable("cash").getIntValue()));
+			buddyApi.setBuddyVariables(user, vars, false, false);
 			break;
 		default:
 			break;
