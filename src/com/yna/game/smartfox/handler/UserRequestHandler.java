@@ -1,14 +1,23 @@
 package com.yna.game.smartfox.handler;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.api.ISFSBuddyApi;
+import com.smartfoxserver.v2.api.ISFSGameApi;
 import com.smartfoxserver.v2.buddylist.BuddyListManager;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
+import com.smartfoxserver.v2.entities.invitation.Invitation;
+import com.smartfoxserver.v2.entities.invitation.InvitationCallback;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
@@ -17,6 +26,15 @@ import com.yna.game.tienlen.models.Command;
 
 @MultiHandler
 public class UserRequestHandler extends ClientRequestHandler {
+	
+	private static ISFSGameApi gameAPI;
+
+	private final int  INVITE_MESSAGE_EXPIRED_SECONDS = 50;
+	
+	public static void init() {
+		gameAPI = SmartFoxServer.getInstance().getAPIManager().getGameApi();
+	}
+	
 	@Override
 	protected void handleRequest(String commandId, User player, ISFSObject params, JSONObject out) {
 		trace("UserRequestHandler handleRequest:" + commandId);
@@ -42,15 +60,16 @@ public class UserRequestHandler extends ClientRequestHandler {
 		case Command.LOAD_LEADERBOARD:
 			handleLoadLeaderboardCommand(player, jsonData, out);
 			break;
-		case Command.LOAD_FRIEND_LIST:
-			handleLoadFriendListCommand(player, jsonData, out);
-			break;
 		case Command.LOAD_USER_INFO:
 			handleLoadUserInfoCommand(player, jsonData, out);
 			break;
 		case Command.ADD_FRIEND:
 			handleAddFriendCommand(player, jsonData, out);
 			break;
+		case Command.INVITE_TO_GAME:
+			handleCommandInviteToGame(player, jsonData, out);
+			break;
+			
 		}
 	}
 	
@@ -63,18 +82,7 @@ public class UserRequestHandler extends ClientRequestHandler {
 			trace("handleLoadLeaderboardCommand:JSONObject Exception:" + exception.toString());
 		}
 	}
-	
-	private void handleLoadFriendListCommand(User player, JSONObject jsonData, JSONObject out) {
-		try {
-			BuddyListManager buddyListManager = zone.getBuddyListManager();
-			String friends = buddyListManager.getBuddyList(player.getName()).toString();
-			trace("handleLoadFriendListCommand " + friends);
-//			out.put("friends", UserManager.getUsers(jsonData.getJSONArray("friends")));
-		} catch (Exception exception) {
-			trace("handleLoadFriendListCommand Exception:" + exception.toString());
-		}
-	}
-	
+		
 	private void handleLoadUserInfoCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			out.put("user", UserManager.getUser(jsonData.getString("username")));
@@ -86,13 +94,48 @@ public class UserRequestHandler extends ClientRequestHandler {
 	private void handleAddFriendCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			ISFSBuddyApi buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
-			buddyApi.initBuddyList(player, false);
+			trace(buddyApi + " " + jsonData.getString("fUsername") + " " + player);
 			buddyApi.addBuddy(player, jsonData.getString("fUsername"), false, true, false);
 			out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
 			out.put("fUsername", jsonData.getString("fUsername"));
-//			UserManager.addFriend(jsonData.getString("username"), jsonData.getString("fUsername"), out);
 		} catch (Exception exception) {
-			trace("handleLoadUserInfoCommand:JSONObject Exception:" + exception.toString());
+			trace("handleAddFriendCommand:JSONObject Exception:" + exception.toString());
+		}
+	}
+	
+	private void handleCommandInviteToGame(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			JSONArray inviteeNames = jsonData.getJSONArray("invitees");
+			List<User> invitees = new ArrayList<User>();
+			for (int i = 0; i < inviteeNames.length(); i++) {
+				invitees.add(zone.getUserByName(inviteeNames.getString(i)));
+			}
+			ISFSObject params = new SFSObject();
+			params.putUtfString("gameType", jsonData.getString("gameType"));
+			params.putUtfString("message", jsonData.getString("message"));
+			params.putUtfString("roomName", jsonData.getString("roomName"));
+
+	    gameAPI.sendInvitation(player, invitees, INVITE_MESSAGE_EXPIRED_SECONDS, new InvitationCallback() {
+        @Override
+        public void onRefused(Invitation invObj, ISFSObject params)
+        {
+            // Handle the refused invitation
+        }
+         
+        @Override
+        public void onExpired(Invitation invObj)
+        {
+            // Handle the expired invitation
+        }
+         
+        @Override
+        public void onAccepted(Invitation invObj, ISFSObject params)
+        {
+            // Handle the accepted invitation
+        }
+	    }, params); 
+		} catch (JSONException e) {
+			trace("handleCommandInviteToGame Exception:" + e.toString());
 		}
 	}
 }

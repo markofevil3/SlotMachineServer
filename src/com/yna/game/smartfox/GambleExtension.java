@@ -25,6 +25,8 @@ public class GambleExtension extends SFSExtension {
 		sfs.getEventManager().setThreadPoolSize(20);
 		taskManager = sfs.getTaskScheduler().scheduleAtFixedRate(new TaskManager(), 0, 1, TimeUnit.SECONDS);
 		
+		UserRequestHandler.init();
+		
 		addRequestHandler(GameId.TLMB, TienLenMienBacHandler.class);
 		addRequestHandler(GameId.USER, UserRequestHandler.class);
 		addRequestHandler(GameId.SLOT_MACHINE, SlotMachineHandler.class);

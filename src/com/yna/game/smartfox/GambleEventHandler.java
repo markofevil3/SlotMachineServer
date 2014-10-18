@@ -1,5 +1,6 @@
 package com.yna.game.smartfox;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -102,12 +103,8 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			trace("##handleServerEvent - ROOM_REMOVED: " + (Room)event.getParameter(SFSEventParam.ROOM));
 			break;
 		case BUDDY_LIST_INIT:
+			trace("BUDDY_LIST_INIT");
 			user = (User)event.getParameter(SFSEventParam.USER);
-			buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
-			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
-			vars.add( new SFSBuddyVariable("displayName", user.getVariable("displayName").getStringValue()));
-			vars.add( new SFSBuddyVariable("cash", user.getVariable("cash").getIntValue()));
-			buddyApi.setBuddyVariables(user, vars, false, false);
 			break;
 		default:
 			break;
@@ -123,6 +120,16 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			variable = new SFSUserVariable("cash", jsonData.getInt("cash"), false);
 			variables.add(variable);
 			player.setVariables(variables);
+			
+			buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+			buddyApi.initBuddyList(player, false);
+			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
+			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
+			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
+			buddyApi.setBuddyVariables(player, vars, false, false);
+			
 		} catch (Exception exception) {
 			trace("setUserVariables:Exception:" + exception.toString());
 		}
