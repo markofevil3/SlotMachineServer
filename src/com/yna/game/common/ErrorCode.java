@@ -30,6 +30,7 @@ public class ErrorCode {
 		public static final int INVALID_GAMECONFIG = 1;
 		public static final int CANNOT_CREATE_ROOM = 2;
 		public static final int GAME_NOT_EXISTS = 3;
+		public static final int ROOM_IS_FULL = 4;
 		public static final int UNKNOWN = 100;
 	}
 }

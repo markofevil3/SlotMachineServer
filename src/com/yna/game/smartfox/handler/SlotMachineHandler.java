@@ -117,39 +117,65 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 
 			sfsApi.joinRoom(player, lobbyRoom, null, false, null, true, false);
-			// Find available game room
-		// Prepare match expression
-			MatchExpression exp = new MatchExpression(RoomProperties.IS_GAME, BoolMatch.EQUALS, true).and
-			                    (RoomProperties.HAS_FREE_PLAYER_SLOTS, BoolMatch.EQUALS, true);
-			  
-			// Search Rooms
-			List<Room> joinableRooms = sfsApi.findRooms(zone.getRoomListFromGroup(GameType.GetRoomGroup(gameType)), exp, 1);
-			if (joinableRooms.size() > 0) {
-				Room joinRoom = joinableRooms.get(0);
-				sfsApi.joinRoom(player, joinRoom, null, false, null, true, false);
-				player.setVariable(new SFSUserVariable("gRoomId", joinRoom.getName(), true));
-				out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.NULL);
-				// generate other user data to send back
-				JSONArray players = new JSONArray();
-				JSONObject tempObj;
-				User otherPlayer;
-				List<User> otherPlayers =	joinRoom.getPlayersList();
-				for (int i = 0; i < otherPlayers.size(); i++) {
-					tempObj = new JSONObject();
-					otherPlayer = otherPlayers.get(i);
-					tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
-					tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
-					tempObj.put("username", otherPlayer.getName());
-					players.put(tempObj);
+			String	roomName = jsonData.getString("roomName");
+			if (!Util.IsNullOrEmpty(roomName)) {
+				Room targetRoom = zone.getRoomByName(roomName);
+				if (!targetRoom.isFull()) {
+					sfsApi.joinRoom(player, targetRoom, null, false, null, true, false);
+					player.setVariable(new SFSUserVariable("gRoomId", targetRoom.getName(), true));
+					out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.NULL);
+					// generate other user data to send back
+					JSONArray players = new JSONArray();
+					JSONObject tempObj;
+					User otherPlayer;
+					List<User> otherPlayers =	targetRoom.getPlayersList();
+					for (int i = 0; i < otherPlayers.size(); i++) {
+						tempObj = new JSONObject();
+						otherPlayer = otherPlayers.get(i);
+						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
+						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
+						tempObj.put("username", otherPlayer.getName());
+						players.put(tempObj);
+					}
+					out.put("otherPlayers", players);
+					out.put("roomId", targetRoom.getName());
+				} else {
+					out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.ROOM_IS_FULL);
+					return;
 				}
-				out.put("otherPlayers", players);
-				out.put("roomId", joinRoom.getName());
 			} else {
-				out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType, out));
-				// put empty other players for new room
-				out.put("otherPlayers", new JSONArray());
+				// Find available game room
+				MatchExpression exp = new MatchExpression(RoomProperties.IS_GAME, BoolMatch.EQUALS, true).and
+				                    (RoomProperties.HAS_FREE_PLAYER_SLOTS, BoolMatch.EQUALS, true);
+				  
+				// Search Rooms
+				List<Room> joinableRooms = sfsApi.findRooms(zone.getRoomListFromGroup(GameType.GetRoomGroup(gameType)), exp, 1);
+				if (joinableRooms.size() > 0) {
+					Room joinRoom = joinableRooms.get(0);
+					sfsApi.joinRoom(player, joinRoom, null, false, null, true, false);
+					player.setVariable(new SFSUserVariable("gRoomId", joinRoom.getName(), true));
+					out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.NULL);
+					// generate other user data to send back
+					JSONArray players = new JSONArray();
+					JSONObject tempObj;
+					User otherPlayer;
+					List<User> otherPlayers =	joinRoom.getPlayersList();
+					for (int i = 0; i < otherPlayers.size(); i++) {
+						tempObj = new JSONObject();
+						otherPlayer = otherPlayers.get(i);
+						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
+						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
+						tempObj.put("username", otherPlayer.getName());
+						players.put(tempObj);
+					}
+					out.put("otherPlayers", players);
+					out.put("roomId", joinRoom.getName());
+				} else {
+					out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType, out));
+					// put empty other players for new room
+					out.put("otherPlayers", new JSONArray());
+				}
 			}
-			
 			out.put("gameType", gameType);
 		} catch (Exception exception) {
 			trace("handleJoinRoomCommand:" + exception.toString());

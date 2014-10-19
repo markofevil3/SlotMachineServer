@@ -43,6 +43,7 @@ public class UserManager {
 			JSONObject data = new JSONObject();
 			if (sfsApi.checkSecurePassword(session, user.getString("password"), password)) {
 				data.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+				user.put("isRegister", false);
 				data.put("user", user);
 				return data;
 			} else {
