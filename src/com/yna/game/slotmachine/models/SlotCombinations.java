@@ -21,14 +21,16 @@ public class SlotCombinations {
 		public static final int CHILI_PEPPER = 7;
 		public static final int MUSHROOM = 8;
 		public static final int FRUIT_BASKET = 9;
-		public static final int TOTAL = 10;
+		public static final int SPECIAL = 10;
+		public static final int TOTAL = 11;
 	}
 	
   public static int MAX_LINE = 9;
   public static int NUM_REELS = 5;
   public static int MAX_DISPLAY_ITEMS = 15;
   
-  private static int[] ITEM_RATES = new int[] {4, 20, 12, 11, 10, 10, 10, 9, 8, 6};
+  private static int[] ITEM_RATES = new int[] {3, 8, 12, 11, 11, 10, 9, 8, 8, 6, 14};
+  private static int[] SPECIAL_ITEM_RATES = new int[] {3, 0, 0, 10, 14, 18, 16, 16, 14, 9, 0};
   
   private static float randomValue;
   private static Random random;
@@ -74,7 +76,9 @@ public class SlotCombinations {
     // item 8
     { 0, 0, 75, 175, 1250 },
     // item 9
-    { 0, 0, 100, 200, 1750 }
+    { 0, 0, 100, 200, 1750 },
+    // special item
+    { 0, 0, 5, 7, 15 }
   };
   
 	public static void Init() {
@@ -82,23 +86,35 @@ public class SlotCombinations {
   	random = new Random();
   }
     
-  public static int RandomItem() {
+  public static int RandomItem(boolean isFreeSpin) {
     float cap = 0;
     randomValue = random.nextFloat() * 100;
-    for (int i = 0; i < ITEM_RATES.length; i++) {
-      if (randomValue <= cap + ITEM_RATES[i]) {
-        return i;
-      } else {
-        cap += ITEM_RATES[i];
+    if (isFreeSpin) {
+      for (int i = 0; i < SPECIAL_ITEM_RATES.length; i++) {
+        if (randomValue <= cap + SPECIAL_ITEM_RATES[i]) {
+          return i;
+        } else {
+          cap += SPECIAL_ITEM_RATES[i];
+        }
+      }
+    } else {
+      for (int i = 0; i < ITEM_RATES.length; i++) {
+        if (randomValue <= cap + ITEM_RATES[i]) {
+          return i;
+        } else {
+          cap += ITEM_RATES[i];
+        }
       }
     }
+
     return 1;
   }
   
-  public static int[] GenerateRandomItems() {
+  public static int[] GenerateRandomItems(boolean isFreeSpin) {
+		Util.log("GenerateRandomItems " + isFreeSpin);
   	int[] resultData = new int[MAX_DISPLAY_ITEMS];
   	for (int i = 0; i < MAX_DISPLAY_ITEMS; i++) {
-  		resultData[i] = RandomItem();
+  		resultData[i] = RandomItem(isFreeSpin);
     }
   	return resultData;
   }
@@ -135,11 +151,21 @@ public class SlotCombinations {
       if (numLines == MAX_LINE && winningLineCount[i] == NUM_REELS) {
       	isJackpot = true;
       }
-      winningGold[i] = PAYOUTS[winningLineType[i]][winningLineCount[i] - 1] * betPerLine;
+      if (winningLineType[i] != SlotItem.SPECIAL) {
+        winningGold[i] = PAYOUTS[winningLineType[i]][winningLineCount[i] - 1] * betPerLine;
+      }
+    }
+    int specialCount = 0;
+    for (int i = 0; i < reelData.length; i++) {
+    	if (reelData[i] == SlotItem.SPECIAL && specialCount < NUM_REELS) {
+    		specialCount++;
+    	}
     }
     try {
 			results.put("winningGold", new JSONArray(winningGold));
 	    results.put("isJackpot", isJackpot);
+//	    results.put("isSpecial", specialCount > 0);
+	    results.put("freeRunCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);
 		} catch (JSONException e) {
 			Util.log("CalculateCombination JSONObject error: " + e.toString());
 		}

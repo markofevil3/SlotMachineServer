@@ -214,22 +214,41 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			int numLines = jsonData.getInt("numLines");
 			int totalCost = betPerLine * numLines;
 			String gameType = jsonData.getString("gameType");
-			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
-			trace("handlePlayCommand " + lobbyRoom.getVariable("jackpot"));
-			RoomVariable jackpot = new SFSRoomVariable("jackpot", lobbyRoom.getVariable("jackpot").getIntValue() + totalCost);
-			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
-			lobbyRoom.setVariable(jackpot);
-			int[] randomItems = SlotCombinations.GenerateRandomItems();
+			UserVariable userFreeSpin = player.getVariable("freeSpin");
+			int freeSpin = userFreeSpin == null ? 0 : userFreeSpin.getIntValue();
+			boolean isFreeSpin = freeSpin > 0;
+			int[] randomItems = SlotCombinations.GenerateRandomItems(isFreeSpin);
+			if (freeSpin > 0) {
+				freeSpin -= 1;
+				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
+			}
 			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine);
+			freeSpin += winResults.getInt("freeRunCount");
+			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			JSONArray winningGold = winResults.getJSONArray("winningGold");
 			int totalWin = 0; 
+			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
+			int crtJackpot = lobbyRoom.getVariable("jackpot").getIntValue();
+			crtJackpot += totalCost;
 			for (int i = 0; i < winningGold.length(); i++) {
 				totalWin += winningGold.getInt(i);
+			}
+			if (winResults.getBoolean("isJackpot")) {
+				totalWin += crtJackpot;
+				crtJackpot = 0;
+			}
+			trace("handlePlayCommand " + lobbyRoom.getVariable("jackpot"));
+			RoomVariable jackpot = new SFSRoomVariable("jackpot", crtJackpot);
+			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
+			lobbyRoom.setVariable(jackpot);
+			if (isFreeSpin) {
+				totalCost = 0;
 			}
 			updatePlayerCash(player, totalWin - totalCost);
 			out.put("items", randomItems);
 			out.put("winResults", winResults);
 			out.put("cost", totalCost);
+			out.put("freeSpinLeft", freeSpin);
 		} catch (JSONException | SFSVariableException e) {
 			trace("handlePlayCommand:" + e.toString());
 		}
