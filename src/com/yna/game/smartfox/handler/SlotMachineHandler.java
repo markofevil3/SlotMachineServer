@@ -217,12 +217,12 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			UserVariable userFreeSpin = player.getVariable("freeSpin");
 			int freeSpin = userFreeSpin == null ? 0 : userFreeSpin.getIntValue();
 			boolean isFreeSpin = freeSpin > 0;
-			int[] randomItems = SlotCombinations.GenerateRandomItems(isFreeSpin);
+			int[] randomItems = SlotCombinations.GenerateRandomItems(isFreeSpin, gameType);
 			if (freeSpin > 0) {
 				freeSpin -= 1;
 				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
-			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine);
+			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType);
 			freeSpin += winResults.getInt("freeRunCount");
 			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			JSONArray winningGold = winResults.getJSONArray("winningGold");
@@ -241,6 +241,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			RoomVariable jackpot = new SFSRoomVariable("jackpot", crtJackpot);
 			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
 			lobbyRoom.setVariable(jackpot);
+			out.put("isBigWin", totalWin > totalCost * 10);
 			if (isFreeSpin) {
 				totalCost = 0;
 			}

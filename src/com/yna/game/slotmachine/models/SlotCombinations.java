@@ -29,6 +29,7 @@ public class SlotCombinations {
   public static int NUM_REELS = 5;
   public static int MAX_DISPLAY_ITEMS = 15;
   
+  // Default value - each game will have different value in its own script
   private static int[] ITEM_RATES = new int[] {3, 8, 12, 11, 11, 10, 9, 8, 8, 6, 14};
   private static int[] SPECIAL_ITEM_RATES = new int[] {3, 0, 0, 10, 14, 18, 16, 16, 14, 9, 0};
   
@@ -56,6 +57,7 @@ public class SlotCombinations {
     { 1, 3, 7, 11, 13 },
   };
   
+  // Default value - each game will have different value in its own script
   public static int[][] PAYOUTS = new int[][] {
     // item 0 - ignore
     { 0, 0, 0, 0, 0 },
@@ -83,13 +85,18 @@ public class SlotCombinations {
   
 	public static void Init() {
 		Util.log("SlotCombinations - Init");
-  	random = new Random();
+//  	random = new Random();
+  	SlotCombinationFruit.Init();
+  	SlotCombinationHalloween.Init();
   }
     
-  public static int RandomItem(boolean isFreeSpin) {
+  public static int RandomItem(boolean isFreeSpin, String gameType) {
     float cap = 0;
+    random = GameType.GetRandomMethod(gameType);
     randomValue = random.nextFloat() * 100;
+    
     if (isFreeSpin) {
+      SPECIAL_ITEM_RATES = GameType.GetSpecialItemRate(gameType);
       for (int i = 0; i < SPECIAL_ITEM_RATES.length; i++) {
         if (randomValue <= cap + SPECIAL_ITEM_RATES[i]) {
           return i;
@@ -98,6 +105,7 @@ public class SlotCombinations {
         }
       }
     } else {
+    	ITEM_RATES = GameType.GetItemRate(gameType);
       for (int i = 0; i < ITEM_RATES.length; i++) {
         if (randomValue <= cap + ITEM_RATES[i]) {
           return i;
@@ -110,22 +118,23 @@ public class SlotCombinations {
     return 1;
   }
   
-  public static int[] GenerateRandomItems(boolean isFreeSpin) {
+  public static int[] GenerateRandomItems(boolean isFreeSpin, String gameType) {
 		Util.log("GenerateRandomItems " + isFreeSpin);
   	int[] resultData = new int[MAX_DISPLAY_ITEMS];
   	for (int i = 0; i < MAX_DISPLAY_ITEMS; i++) {
-  		resultData[i] = RandomItem(isFreeSpin);
+  		resultData[i] = RandomItem(isFreeSpin, gameType);
     }
   	return resultData;
   }
   
   // input data is array type of 15 items - output data is array winning gold of 9 lines
-  public static JSONObject CalculateCombination(int[] reelData, int numLines, int betPerLine) {
+  public static JSONObject CalculateCombination(int[] reelData, int numLines, int betPerLine, String gameType) {
   	JSONObject results = new JSONObject();
     int[] winningLineCount = new int[numLines];
     int[] winningLineType = new int[numLines];
     int[] winningGold = new int[numLines];
     boolean isJackpot = false; 
+    PAYOUTS = GameType.GetPayout(gameType);
     for (int i = 0; i < numLines; i++) {
       for (int j = 0; j < NUM_REELS - 1; j++) {
         if (j == 0 && reelData[COMBINATION[i][j]] != SlotItem.WILD) {
