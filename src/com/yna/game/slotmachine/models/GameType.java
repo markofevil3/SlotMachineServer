@@ -8,6 +8,7 @@ public class GameType {
 
 	public static final String SLOT_TYPE_FRUITS = "slot_fruit";
 	public static final String SLOT_TYPE_HALLOWEEN = "slot_halloween";
+	public static final String SLOT_TYPE_DRAGON = "slot_dragon";
 	
 	private static final String FRUIT_LOBBY_ROOM = "fruitLobby";
 	private static final String FRUIT_ROOM_GROUP = "fruitRooms";
@@ -17,12 +18,19 @@ public class GameType {
 	private static final String HALLOWEEN_ROOM_GROUP = "halloweenRooms";
 	private static final String HALLOWEEN_ROOM_NAME = "hRoom";
 	
+	private static final String DRAGON_LOBBY_ROOM = "dragonLobby";
+	private static final String DRAGON_ROOM_GROUP = "dragonRooms";
+	private static final String DRAGON_ROOM_NAME = "dRoom";
+
+	
 	public static String GetLoobyRoom(String gameType) {
 		switch (gameType) {
 		case SLOT_TYPE_FRUITS:
 			return FRUIT_LOBBY_ROOM;
 		case SLOT_TYPE_HALLOWEEN:
 			return HALLOWEEN_LOBBY_ROOM;
+		case SLOT_TYPE_DRAGON:
+			return DRAGON_LOBBY_ROOM;
 		}
 		return null;
 	}
@@ -33,6 +41,8 @@ public class GameType {
 			return FRUIT_ROOM_GROUP;
 		case SLOT_TYPE_HALLOWEEN:
 			return HALLOWEEN_ROOM_GROUP;
+		case SLOT_TYPE_DRAGON:
+			return DRAGON_ROOM_GROUP;
 		}
 		return null;
 	}
@@ -43,6 +53,8 @@ public class GameType {
 			return FRUIT_ROOM_NAME;
 		case SLOT_TYPE_HALLOWEEN:
 			return HALLOWEEN_ROOM_NAME;
+		case SLOT_TYPE_DRAGON:
+			return DRAGON_ROOM_NAME;
 		}
 		return null;
 	}
@@ -53,6 +65,8 @@ public class GameType {
 			return SlotCombinationFruit.random;
 		case SLOT_TYPE_HALLOWEEN:
 			return SlotCombinationHalloween.random;
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.random;
 		}
 		Util.log("######GameType - GetRandomMethod null : " + gameType);
 		return new Random();
@@ -64,6 +78,8 @@ public class GameType {
 			return SlotCombinationFruit.SPECIAL_ITEM_RATES;
 		case SLOT_TYPE_HALLOWEEN:
 			return SlotCombinationHalloween.SPECIAL_ITEM_RATES;
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.SPECIAL_ITEM_RATES;
 		}
 		Util.log("######GameType - GetSpecialItemRate null : " + gameType);
 		return null;
@@ -75,6 +91,8 @@ public class GameType {
 			return SlotCombinationFruit.ITEM_RATES;
 		case SLOT_TYPE_HALLOWEEN:
 			return SlotCombinationHalloween.ITEM_RATES;
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.ITEM_RATES;
 		}
 		Util.log("######GameType - GetItemRate null : " + gameType);
 		return null;
@@ -86,6 +104,8 @@ public class GameType {
 			return SlotCombinationFruit.PAYOUTS;
 		case SLOT_TYPE_HALLOWEEN:
 			return SlotCombinationHalloween.PAYOUTS;
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.PAYOUTS;
 		}
 		Util.log("######GameType - GetPayout null : " + gameType);
 		return null;

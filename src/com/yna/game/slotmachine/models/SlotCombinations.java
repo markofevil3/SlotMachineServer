@@ -88,6 +88,7 @@ public class SlotCombinations {
 //  	random = new Random();
   	SlotCombinationFruit.Init();
   	SlotCombinationHalloween.Init();
+  	SlotCombinationDragon.Init();
   }
     
   public static int RandomItem(boolean isFreeSpin, String gameType) {
