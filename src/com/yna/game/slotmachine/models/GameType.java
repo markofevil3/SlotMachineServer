@@ -2,6 +2,11 @@ package com.yna.game.slotmachine.models;
 
 import java.util.Random;
 
+import org.json.JSONObject;
+
+import com.smartfoxserver.v2.api.SFSApi;
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
 import com.yna.game.common.Util;
 
 public class GameType {
@@ -108,6 +113,30 @@ public class GameType {
 			return SlotCombinationDragon.PAYOUTS;
 		}
 		Util.log("######GameType - GetPayout null : " + gameType);
+		return null;
+	}
+
+	public static JSONObject SetGameVariable(String gameType, User player, Room room, SFSApi sfsApi) {
+		switch(gameType) {
+		case SLOT_TYPE_FRUITS:
+			return SlotCombinationFruit.SetGameVariable(player, room, sfsApi);
+		case SLOT_TYPE_HALLOWEEN:
+			return SlotCombinationHalloween.SetGameVariable(player, room, sfsApi);
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.SetGameVariable(player, room, sfsApi);
+		}
+		return null;
+	}
+	
+	public static JSONObject GetGameVariable(String gameType, User player, Room room) {
+		switch(gameType) {
+		case SLOT_TYPE_FRUITS:
+			return SlotCombinationFruit.GetGameVariable(player, room);
+		case SLOT_TYPE_HALLOWEEN:
+			return SlotCombinationHalloween.GetGameVariable(player, room);
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.GetGameVariable(player, room);
+		}
 		return null;
 	}
 }

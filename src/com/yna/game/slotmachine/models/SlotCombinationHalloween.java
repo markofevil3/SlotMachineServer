@@ -2,6 +2,12 @@ package com.yna.game.slotmachine.models;
 
 import java.util.Random;
 
+import org.json.JSONObject;
+
+import com.smartfoxserver.v2.api.SFSApi;
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+
 public class SlotCombinationHalloween {
 	
   public static Random random;
@@ -34,5 +40,13 @@ public class SlotCombinationHalloween {
   
 	public static void Init() {
   	random = new Random();
+	}
+	
+	public static JSONObject SetGameVariable(User player, Room room, SFSApi sfsApi) {
+		return null;
+	}
+	
+	public static JSONObject GetGameVariable(User player, Room room) {
+		return null;
 	}
 }

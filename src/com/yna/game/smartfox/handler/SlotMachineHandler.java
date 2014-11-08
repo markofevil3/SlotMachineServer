@@ -139,6 +139,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 					}
 					out.put("otherPlayers", players);
 					out.put("roomId", targetRoom.getName());
+					out.put("roomData", GameType.GetGameVariable(gameType, player, targetRoom));
 				} else {
 					out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.ROOM_IS_FULL);
 					return;
@@ -170,6 +171,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 					}
 					out.put("otherPlayers", players);
 					out.put("roomId", joinRoom.getName());
+					out.put("roomData", GameType.GetGameVariable(gameType, player, joinRoom));
 				} else {
 					out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType, out));
 					// put empty other players for new room
@@ -197,9 +199,13 @@ public class SlotMachineHandler extends ClientRequestHandler {
 		roomSettings.setGame(true);
 		try {
 			Room createdRoom = sfsApi.createRoom(zone, roomSettings, null, true, null);
+			// Set room variable base on room type
+			JSONObject roomData = GameType.SetGameVariable(gameType, player, createdRoom, sfsApi);
+			
 			sfsApi.joinRoom(player, createdRoom, null, false, null, true, false);
 			player.setVariable(new SFSUserVariable("gRoomId", roomName, true));
 			out.put("roomId", createdRoom.getName());
+			out.put("roomData", roomData);
 		} catch (Exception exception) {
 			trace("CreateSFSRoom:Exception:" + exception.toString());
 			errorCode = ErrorCode.SlotMachine.UNKNOWN;

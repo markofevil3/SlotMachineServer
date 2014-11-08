@@ -1,6 +1,17 @@
 package com.yna.game.slotmachine.models;
 
+import java.util.Arrays;
 import java.util.Random;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.smartfoxserver.v2.api.SFSApi;
+import com.smartfoxserver.v2.entities.Room;
+import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.variables.RoomVariable;
+import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
+import com.yna.game.common.Util;
 
 public class SlotCombinationDragon {
   public static Random random;
@@ -31,7 +42,43 @@ public class SlotCombinationDragon {
     { 0, 0, 5, 7, 15 }
   };
   
+	public static final int DRAGON_FIRE = 0;
+	public static final int DRAGON_ICE = 1;
+	public static final int DRAGON_DARK = 2;
+
+  public static int[] DRAGON_HP = new int[] { 500000, 700000, 1000000};
+	
 	public static void Init() {
   	random = new Random();
+	}
+	
+	public static JSONObject SetGameVariable(User player, Room room, SFSApi sfsApi) {
+		int dIndex = SpawnDragon();
+		RoomVariable dragonIndex = new SFSRoomVariable("dIndex", dIndex);
+    RoomVariable dragonHP = new SFSRoomVariable("dHP", DRAGON_HP[dIndex]);
+    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonIndex, dragonHP));
+    JSONObject jsonData = new JSONObject();
+    try {
+			jsonData.put("dIndex", dIndex);
+	    jsonData.put("dHP", DRAGON_HP[dIndex]);
+		} catch (JSONException e) {
+			Util.log("SlotCombinationDragon SetGameVariable " + e.toString());
+		}
+    return jsonData;
+	}
+	
+	public static JSONObject GetGameVariable(User player, Room room) {
+    JSONObject jsonData = new JSONObject();
+    try {
+			jsonData.put("dIndex", room.getVariable("dIndex").getIntValue());
+	    jsonData.put("dHP", room.getVariable("dHP").getIntValue());
+		} catch (JSONException e) {
+			Util.log("SlotCombinationDragon GetGameVariable " + e.toString());
+		}
+    return jsonData;
+	}
+	
+	public static int SpawnDragon() {
+		return random.nextInt(DRAGON_HP.length);
 	}
 }
