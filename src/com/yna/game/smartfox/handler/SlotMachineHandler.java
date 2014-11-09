@@ -197,6 +197,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 		roomSettings.setName(roomName);
 		roomSettings.setAutoRemoveMode(SFSRoomRemoveMode.WHEN_EMPTY);
 		roomSettings.setGame(true);
+		roomSettings.setDynamic(true);
 		try {
 			Room createdRoom = sfsApi.createRoom(zone, roomSettings, null, true, null);
 			// Set room variable base on room type
@@ -247,6 +248,13 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			RoomVariable jackpot = new SFSRoomVariable("jackpot", crtJackpot);
 			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
 			lobbyRoom.setVariable(jackpot);
+			Room gameRoom = zone.getRoomByName(player.getVariable("gRoomId").getStringValue());
+			JSONObject spinData = new JSONObject();
+			spinData.put("totalWin", totalWin);
+			spinData.put("winningGold", winningGold);
+			// TO DO: Set room special variables
+			GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, spinData);
+			
 			out.put("isBigWin", totalWin > totalCost * 10);
 			if (isFreeSpin) {
 				totalCost = 0;

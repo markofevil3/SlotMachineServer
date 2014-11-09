@@ -128,6 +128,18 @@ public class GameType {
 		return null;
 	}
 	
+	public static JSONObject UpdateGameVariable(String gameType, User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
+		switch(gameType) {
+		case SLOT_TYPE_FRUITS:
+			return SlotCombinationFruit.UpdateGameVariable(player, room, sfsApi, jsonData);
+		case SLOT_TYPE_HALLOWEEN:
+			return SlotCombinationHalloween.UpdateGameVariable(player, room, sfsApi, jsonData);
+		case SLOT_TYPE_DRAGON:
+			return SlotCombinationDragon.UpdateGameVariable(player, room, sfsApi, jsonData);
+		}
+		return null;
+	}
+	
 	public static JSONObject GetGameVariable(String gameType, User player, Room room) {
 		switch(gameType) {
 		case SLOT_TYPE_FRUITS:

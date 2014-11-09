@@ -46,6 +46,10 @@ public class SlotCombinationFruit {
 		return null;
 	}
 	
+	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
+		return null;
+	}
+	
 	public static JSONObject GetGameVariable(User player, Room room) {
 		return null;
 	}

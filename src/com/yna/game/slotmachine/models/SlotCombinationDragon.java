@@ -9,6 +9,8 @@ import org.json.JSONObject;
 import com.smartfoxserver.v2.api.SFSApi;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.yna.game.common.Util;
@@ -61,17 +63,41 @@ public class SlotCombinationDragon {
     try {
 			jsonData.put("dIndex", dIndex);
 	    jsonData.put("dHP", DRAGON_HP[dIndex]);
+	    jsonData.put("dMaxHP", DRAGON_HP[dIndex]);
 		} catch (JSONException e) {
 			Util.log("SlotCombinationDragon SetGameVariable " + e.toString());
 		}
     return jsonData;
 	}
 	
+	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
+    try {
+			int dHP = room.getVariable("dHP").getIntValue();
+			int damage = jsonData.getInt("totalWin");
+			if (damage > 0) {
+				dHP = Math.max(0, dHP - damage);
+		    RoomVariable dragonHP = new SFSRoomVariable("dHP", dHP);
+		    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonHP), false, false, false);
+		    jsonData.put("dHP", dHP);
+				ISFSObject out = new SFSObject();
+				out.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+				out.putUtfString("cmd", Command.SLOT_PLAY);
+				out.putUtfString("message", "");
+		    sfsApi.sendPublicMessage(room, player, "Admin", out);
+			}
+		} catch (JSONException e) {
+			Util.log("SlotCombinationDragon UpdateGameVariable " + e.toString());
+		}
+    return null;
+	}
+	
 	public static JSONObject GetGameVariable(User player, Room room) {
     JSONObject jsonData = new JSONObject();
     try {
-			jsonData.put("dIndex", room.getVariable("dIndex").getIntValue());
+    	int dIndex = room.getVariable("dIndex").getIntValue(); 
+			jsonData.put("dIndex", dIndex);
 	    jsonData.put("dHP", room.getVariable("dHP").getIntValue());
+	    jsonData.put("dMaxHP", DRAGON_HP[dIndex]);
 		} catch (JSONException e) {
 			Util.log("SlotCombinationDragon GetGameVariable " + e.toString());
 		}
