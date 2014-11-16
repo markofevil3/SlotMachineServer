@@ -3,6 +3,7 @@ package com.yna.game.slotmachine.models;
 import java.util.Arrays;
 import java.util.Random;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -23,33 +24,52 @@ public class SlotCombinationDragon {
     // item 0 - ignore
     { 0, 0, 0, 0, 0 },
     // item 1
-    { 0, 1, 3, 10, 85 },
+    { 0, 10, 30, 100, 850 },
     // item 2
-    { 0, 0, 15, 30, 150 },
+    { 0, 0, 150, 300, 1500 },
     // item 3
-    { 0, 0, 20, 40, 250 },
+    { 0, 0, 200, 400, 2500 },
     // item 4
-    { 0, 0, 25, 50, 400 },
+    { 0, 0, 250, 500, 4000 },
     // item 5
-    { 0, 0, 30, 70, 550 },
+    { 0, 0, 300, 700, 5500 },
     // item 6
-    { 0, 0, 35, 80, 650 },
+    { 0, 0, 350, 800, 6500 },
     // item 7
-    { 0, 0, 45, 100, 800 },
+    { 0, 0, 450, 1000, 8000 },
     // item 8
-    { 0, 0, 75, 175, 1250 },
+    { 0, 0, 750, 1750, 12500 },
     // item 9
-    { 0, 0, 100, 200, 1750 },
+    { 0, 0, 1000, 2000, 17500 },
     // special item
     { 0, 0, 5, 7, 15 }
   };
   
-	public static final int DRAGON_FIRE = 0;
-	public static final int DRAGON_ICE = 1;
-	public static final int DRAGON_DARK = 2;
+  private static final int DRAGON_FIRE = 0;
+	private static final int DRAGON_ICE = 1;
+	private static final int DRAGON_DARK = 2;
 
-  public static int[] DRAGON_HP = new int[] { 500000, 700000, 1000000};
+	private static int[] DRAGON_HP = new int[] { 500000, 700000, 1000000};
 	
+  private static int[][] DRAGON_DROP_CASH = new int[][] {
+    // DRAGON_FIRE
+    { 50000, 100000, 150000 },
+    // DRAGON_ICE
+    { 150000, 200000, 250000 },
+    // DRAGON_DARK
+    { 300000, 350000, 400000 },
+  };
+  
+  private static int[][] DRAGON_DROP_GEM = new int[][] {
+    // DRAGON_FIRE
+    { 0, 0, 1 },
+    // DRAGON_ICE
+    { 0, 1, 2 },
+    // DRAGON_DARK
+    { 1, 2, 3 },
+  };
+  
+  
 	public static void Init() {
   	random = new Random();
 	}
@@ -58,7 +78,7 @@ public class SlotCombinationDragon {
 		int dIndex = SpawnDragon();
 		RoomVariable dragonIndex = new SFSRoomVariable("dIndex", dIndex);
     RoomVariable dragonHP = new SFSRoomVariable("dHP", DRAGON_HP[dIndex]);
-    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonIndex, dragonHP));
+    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonIndex, dragonHP), false, false, false);
     JSONObject jsonData = new JSONObject();
     try {
 			jsonData.put("dIndex", dIndex);
@@ -76,19 +96,35 @@ public class SlotCombinationDragon {
 			int damage = jsonData.getInt("totalWin");
 			if (damage > 0) {
 				dHP = Math.max(0, dHP - damage);
-		    RoomVariable dragonHP = new SFSRoomVariable("dHP", dHP);
-		    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonHP), false, false, false);
+		    // To do: spawn new dragon if old is dead, random treasure and add for users
+				if (dHP == 0) {
+					// random treasure
+					int dropIndex = RandomDrop();
+		    	int dIndex = room.getVariable("dIndex").getIntValue(); 
+					JSONArray dropItems = new JSONArray();
+					// TO do: add drop to user data
+					dropItems.put(DRAGON_DROP_CASH[dIndex][dropIndex]);
+					dropItems.put(DRAGON_DROP_GEM[dIndex][dropIndex]);
+					jsonData.put("dropItems", dropItems);
+					// spawn new dragon
+					JSONObject newDragon = SetGameVariable(player, room, sfsApi);
+					jsonData.put("newBoss", newDragon);
+				} else {
+			    RoomVariable dragonHP = new SFSRoomVariable("dHP", dHP);
+			    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonHP), false, false, false);
+				}
 		    jsonData.put("dHP", dHP);
 				ISFSObject out = new SFSObject();
 				out.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
 				out.putUtfString("cmd", Command.SLOT_PLAY);
 				out.putUtfString("message", "");
 		    sfsApi.sendPublicMessage(room, player, "Admin", out);
+		    return jsonData;
 			}
 		} catch (JSONException e) {
 			Util.log("SlotCombinationDragon UpdateGameVariable " + e.toString());
 		}
-    return null;
+    return new JSONObject();
 	}
 	
 	public static JSONObject GetGameVariable(User player, Room room) {
@@ -104,7 +140,11 @@ public class SlotCombinationDragon {
     return jsonData;
 	}
 	
-	public static int SpawnDragon() {
+	private static int SpawnDragon() {
 		return random.nextInt(DRAGON_HP.length);
+	}
+	
+	private static int RandomDrop() {
+		return random.nextInt(DRAGON_DROP_CASH[0].length);
 	}
 }

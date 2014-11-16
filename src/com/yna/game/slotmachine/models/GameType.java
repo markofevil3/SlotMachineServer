@@ -125,7 +125,7 @@ public class GameType {
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.SetGameVariable(player, room, sfsApi);
 		}
-		return null;
+		return new JSONObject();
 	}
 	
 	public static JSONObject UpdateGameVariable(String gameType, User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
@@ -137,7 +137,7 @@ public class GameType {
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.UpdateGameVariable(player, room, sfsApi, jsonData);
 		}
-		return null;
+		return new JSONObject();
 	}
 	
 	public static JSONObject GetGameVariable(String gameType, User player, Room room) {
@@ -149,6 +149,6 @@ public class GameType {
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.GetGameVariable(player, room);
 		}
-		return null;
+		return new JSONObject();
 	}
 }

@@ -43,14 +43,14 @@ public class SlotCombinationHalloween {
 	}
 	
 	public static JSONObject SetGameVariable(User player, Room room, SFSApi sfsApi) {
-		return null;
+		return new JSONObject();
 	}
 	
 	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
-		return null;
+		return new JSONObject();
 	}
 	
 	public static JSONObject GetGameVariable(User player, Room room) {
-		return null;
+		return new JSONObject();
 	}
 }

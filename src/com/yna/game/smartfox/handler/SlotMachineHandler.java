@@ -252,13 +252,20 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			JSONObject spinData = new JSONObject();
 			spinData.put("totalWin", totalWin);
 			spinData.put("winningGold", winningGold);
-			// TO DO: Set room special variables
-			GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, spinData);
+			JSONObject specialData = GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, spinData);
+			out.put("specials", specialData);
 			
 			out.put("isBigWin", totalWin > totalCost * 10);
 			if (isFreeSpin) {
 				totalCost = 0;
 			}
+			
+			// If boss drop items, add it to user account
+			// To do: add gem
+			if (specialData.has("dropItems")) {
+				totalWin += specialData.getJSONArray("dropItems").getInt(0);
+			}
+			
 			updatePlayerCash(player, totalWin - totalCost);
 			out.put("items", randomItems);
 			out.put("winResults", winResults);
@@ -272,6 +279,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	private void updatePlayerCash(User player, int val) {
 		UserManager.updatePlayerCash(player.getName(), val);
 		UserVariable variable = new SFSUserVariable("cash", Math.max(0, player.getVariable("cash").getIntValue() + val));
+		// To do: should or not fire client event here?
 		sfsApi.setUserVariables(player, Arrays.asList(variable), true, false);
 	}
 	
