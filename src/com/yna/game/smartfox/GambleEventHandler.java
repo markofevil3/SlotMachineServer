@@ -29,7 +29,6 @@ import com.yna.game.common.Util;
 
 public class GambleEventHandler extends BaseServerEventHandler {
 
-	private static final int NEW_USER_CASH = 100000;
 	protected ISFSBuddyApi buddyApi;
 	
 	@Override
@@ -49,13 +48,19 @@ public class GambleEventHandler extends BaseServerEventHandler {
 					Boolean isGuest = jsonData.getBoolean("isGuest");
 					trace("GambleEventHandler : USER_REGISTER " + username + " " + password + " guest:" + isGuest + "#");
 					// Register new user
-					UserManager.registerUser(username, jsonData);
-					jsonData.put("cash", NEW_USER_CASH);
-					outData.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+					errorCode = UserManager.registerUser(username, jsonData, getParentExtension().getParentZone());
+					if (errorCode != ErrorCode.User.NULL) {
+						JSONObject error = new JSONObject();
+						error.put(ErrorCode.PARAM, errorCode);
+						outData.putByteArray("jsonData", Util.StringToBytesArray(error.toString()));
+						throw new SFSLoginException("REGISTER ERROR: " + errorCode); 
+					} else {
+						outData.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+					}
 				} else {
 					trace("GambleEventHandler : USER_LOGIN " + username + " " + password);
 					// check user data
-					JSONObject data = UserManager.verifyUser(username, password, (Session)event.getParameter(SFSEventParam.SESSION), getApi());
+					JSONObject data = UserManager.verifyUser(username, password, (Session)event.getParameter(SFSEventParam.SESSION), getApi(), getParentExtension().getParentZone());
 					errorCode = data.getInt(ErrorCode.PARAM);
 					if (errorCode == ErrorCode.User.NULL) {
 						outData.putByteArray("jsonData", Util.StringToBytesArray(data.getJSONObject("user").toString()));
