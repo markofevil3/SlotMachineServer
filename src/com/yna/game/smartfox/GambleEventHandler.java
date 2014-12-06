@@ -87,7 +87,9 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			trace("##handleServerEvent - USER_JOIN_ZONE: " + user);
 			break;
 		case USER_DISCONNECT:
-			trace("##handleServerEvent - USER_DISCONNECT: " + (String) event.getParameter(SFSEventParam.LOGIN_NAME));
+			user = (User)event.getParameter(SFSEventParam.USER);
+			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
+			UserManager.saveUserToDB(user.getName(), getParentExtension().getParentZone());
 			break;
 		case PUBLIC_MESSAGE:
 			user = (User)event.getParameter(SFSEventParam.USER);

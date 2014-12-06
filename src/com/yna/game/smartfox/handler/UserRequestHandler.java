@@ -85,7 +85,7 @@ public class UserRequestHandler extends ClientRequestHandler {
 		
 	private void handleLoadUserInfoCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			out.put("user", UserManager.getUser(jsonData.getString("username")));
+			out.put("user", UserManager.getUser(jsonData.getString("username"), zone));
 		} catch (Exception exception) {
 			trace("handleLoadUserInfoCommand:JSONObject Exception:" + exception.toString());
 		}

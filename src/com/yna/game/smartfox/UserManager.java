@@ -1,5 +1,7 @@
 package com.yna.game.smartfox;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,6 +27,8 @@ import java.sql.SQLException;
 
 
 
+
+
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 
@@ -32,7 +36,8 @@ public class UserManager {
 	
 	private static ConcurrentHashMap<String, JSONObject> onlineUsers = new ConcurrentHashMap<String, JSONObject>();
 	private static final int NEW_USER_CASH = 100000;
-
+	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
 		onlineUsers.put(username, user);
@@ -44,15 +49,11 @@ public class UserManager {
 		try {
 			// find user in cache
 			JSONObject user = getOnlineUser(username);
-			boolean isFromDB = false;
 			if (user == null) {
-				// TO DO: Find user in database
-				Util.log("UserManager verifyUser NULL");
 				IDBManager dbManager = zone.getDBManager();
 				Connection connection = null;
 				PreparedStatement selectStatement = null;
 				ResultSet selectResultSet = null;
-				PreparedStatement insertStatement = null;
 		    try {
 			  	// Grab a connection from the DBManager connection pool
 			    connection = dbManager.getConnection();
@@ -66,9 +67,7 @@ public class UserManager {
 			  		selectStatement.setString(1, username);
 			      // Execute query
 				    selectResultSet = selectStatement.executeQuery();
-						// TO DO: Found user -> create jsonData for cache user
 						if (selectResultSet.first()) {
-							isFromDB = true;
 							user = new JSONObject();
 							createUserJSONData(user, selectResultSet);
 						}
@@ -108,6 +107,10 @@ public class UserManager {
 				data.put(ErrorCode.PARAM, ErrorCode.User.NULL);
 				user.put("isRegister", false);
 				data.put("user", user);
+				SimpleDateFormat sdfDate = new SimpleDateFormat(DATE_FORMAT);
+				user.put("lastLogin", sdfDate.format(new Date()));
+				// add user to online list if login successed
+	  		addUser(username, user);
 				return data;
 			} else {
 				JSONObject error = new JSONObject();
@@ -126,10 +129,54 @@ public class UserManager {
 		return onlineUsers.get(username);
 	}
 	
-	public static JSONObject getUser(String username) {
+	// TO DO: remove unwanted field in return data 
+	public static JSONObject getUser(String username, Zone zone) throws JSONException {
 		JSONObject user = onlineUsers.get(username);
 		if (user == null) {
-			// TO DO: Find user in database
+			IDBManager dbManager = zone.getDBManager();
+			Connection connection = null;
+			PreparedStatement selectStatement = null;
+			ResultSet selectResultSet = null;
+	    try {
+		  	// Grab a connection from the DBManager connection pool
+		    connection = dbManager.getConnection();
+		    // Throw error - cant get any connection
+		    if (connection == null) {
+		  		user.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
+					return user;
+		    } else {
+		  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
+		  		selectStatement.setString(1, username);
+		      // Execute query
+			    selectResultSet = selectStatement.executeQuery();
+					if (selectResultSet.first()) {
+						user = new JSONObject();
+						createUserJSONData(user, selectResultSet);
+					}
+		    }
+	    }
+	    // Username was not found
+	    catch (SQLException | JSONException e) {
+	  		Util.log("UserManager verifyUser SQLException | JSONException: " + e.toString());
+	  		user.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
+				return user;
+	    }
+
+			finally
+			{
+				// Return connection to the DBManager connection pool
+				try {
+					connection.close();
+					if (selectStatement != null) {
+						selectStatement.close();
+					}
+					if (selectResultSet != null) {
+						selectResultSet.close();
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
 		}
 		return user;
 	}
@@ -165,30 +212,30 @@ public class UserManager {
 	}
 
 	// Get multiple users by list usernames (online and offline)
-	public static JSONArray getUsers(JSONArray usernameList) throws JSONException {
-		String username;
-		JSONObject tempUser;
-		JSONObject user;
-		JSONArray friends = new JSONArray();
-		JSONArray offlineUsers = new JSONArray();
-		// Get online users from cache
-		for (int i = 0; i < usernameList.length(); i++) {
-			username = usernameList.getString(i);
-			tempUser = getOnlineUser(username);
-			user = new JSONObject();
-			user.put("username", tempUser.get("username"));
-			user.put("displayName", tempUser.get("displayName"));
-			user.put("cash", tempUser.getInt("cash"));
-			if (user != null) {
-				friends.put(user);
-			} else {
-				offlineUsers.put(username);
-			}
-		}
-		// TO DO: get offline user from database
-
-		return friends;
-	}
+//	public static JSONArray getUsers(JSONArray usernameList) throws JSONException {
+//		String username;
+//		JSONObject tempUser;
+//		JSONObject user;
+//		JSONArray friends = new JSONArray();
+//		JSONArray offlineUsers = new JSONArray();
+//		// Get online users from cache
+//		for (int i = 0; i < usernameList.length(); i++) {
+//			username = usernameList.getString(i);
+//			tempUser = getOnlineUser(username);
+//			user = new JSONObject();
+//			user.put("username", tempUser.get("username"));
+//			user.put("displayName", tempUser.get("displayName"));
+//			user.put("cash", tempUser.getInt("cash"));
+//			if (user != null) {
+//				friends.put(user);
+//			} else {
+//				offlineUsers.put(username);
+//			}
+//		}
+//		// TO DO: get offline user from database
+//
+//		return friends;
+//	}
 	
 	public static void addFriend(String username, String fUsername, JSONObject out) throws JSONException {
 		JSONObject user = getOnlineUser(username);
@@ -303,6 +350,50 @@ public class UserManager {
   		addUser(username, user);
     }
 		return errorCode;
+	}
+	
+	public static void saveUserToDB(String username, Zone zone) {
+		JSONObject user = getOnlineUser(username);
+		IDBManager dbManager = zone.getDBManager();
+		Connection connection = null;
+		PreparedStatement updateStatement = null;
+		try {
+			connection = dbManager.getConnection();
+			updateStatement = connection.prepareStatement("UPDATE user SET password=?, displayName=?,"
+																																	+ "email=?, avatar=?, cash=?, gem=?, lastLogin=?,"
+																																	+ "facebookId=?, bossKill=?, totalWin=?, biggestWin=? WHERE username=?");
+			updateStatement.setString(1, user.getString("password"));
+			updateStatement.setString(2, user.getString("displayName"));
+			updateStatement.setString(3, user.getString("email"));
+			updateStatement.setString(4, user.getString("avatar"));
+			updateStatement.setInt(5, user.getInt("cash"));
+			updateStatement.setInt(6, user.getInt("gem"));
+			updateStatement.setTimestamp(7, Util.ConvertStringToTimestamp(user.getString("lastLogin")));
+			updateStatement.setString(8, user.getString("facebookId"));
+			updateStatement.setInt(9, user.getInt("bossKill"));
+			updateStatement.setInt(10, user.getInt("totalWin"));
+			updateStatement.setInt(11, user.getInt("biggestWin"));
+			updateStatement.setString(12, username);
+	    // Execute query
+			updateStatement.executeUpdate();
+		} catch (SQLException | JSONException e) {
+  		Util.log("UserManager saveUserToDB SQLException | JSONException: " + e.toString());
+  		// TO DO save exception to exception log file
+		}
+		finally
+		{
+			// Return connection to the DBManager connection pool
+			try {
+				if (connection != null) {
+					connection.close();
+				}
+				if (updateStatement != null) {
+					updateStatement.close();
+				}
+			} catch (SQLException e) {
+	  		Util.log("UserManager saveUserToDB 2 SQLException: " + e.toString());
+			}
+		}
 	}
 	
 	public static JSONObject createUserJSONData(JSONObject user, ResultSet userResultSet) {
