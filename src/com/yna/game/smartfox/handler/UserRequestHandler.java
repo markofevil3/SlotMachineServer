@@ -11,9 +11,7 @@ import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.api.ISFSBuddyApi;
 import com.smartfoxserver.v2.api.ISFSGameApi;
-import com.smartfoxserver.v2.buddylist.BuddyListManager;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.data.ISFSArray;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
 import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.invitation.Invitation;
@@ -33,8 +31,7 @@ public class UserRequestHandler extends ClientRequestHandler {
 	
 	public static void init() {
 		gameAPI = SmartFoxServer.getInstance().getAPIManager().getGameApi();
-	}
-	
+	}	
 	@Override
 	protected void handleRequest(String commandId, User player, ISFSObject params, JSONObject out) {
 		trace("UserRequestHandler handleRequest:" + commandId);
@@ -75,8 +72,8 @@ public class UserRequestHandler extends ClientRequestHandler {
 	
 	private void handleLoadLeaderboardCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			// TO DO: Get top user by type - should cache
-			out.put("users", UserManager.getAllUsers());
+			// TO DO: Get leaderboard by type
+			out.put("users", UserManager.getLeaderboardUsers());
 			out.put("type", jsonData.getInt("type"));
 		} catch (Exception exception) {
 			trace("handleLoadLeaderboardCommand:JSONObject Exception:" + exception.toString());
@@ -85,7 +82,7 @@ public class UserRequestHandler extends ClientRequestHandler {
 		
 	private void handleLoadUserInfoCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			out.put("user", UserManager.getUser(jsonData.getString("username"), zone));
+			out.put("user", UserManager.getUser(jsonData.getString("username")));
 		} catch (Exception exception) {
 			trace("handleLoadUserInfoCommand:JSONObject Exception:" + exception.toString());
 		}

@@ -4,16 +4,12 @@ import java.util.ArrayList;
 
 import org.json.JSONObject;
 
-import com.smartfoxserver.bitswarm.sessions.ISession;
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
-import com.smartfoxserver.v2.api.SFSApi;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.entities.variables.UserVariable;
 import com.yna.game.common.ErrorCode;

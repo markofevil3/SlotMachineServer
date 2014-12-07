@@ -2,7 +2,6 @@ package com.yna.game.smartfox;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -12,10 +11,6 @@ import org.json.JSONObject;
 import com.smartfoxserver.bitswarm.sessions.Session;
 import com.smartfoxserver.v2.api.ISFSApi;
 import com.smartfoxserver.v2.db.IDBManager;
-import com.smartfoxserver.v2.entities.Zone;
-import com.smartfoxserver.v2.exceptions.SFSErrorCode;
-import com.smartfoxserver.v2.exceptions.SFSErrorData;
-import com.smartfoxserver.v2.exceptions.SFSLoginException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -35,8 +30,12 @@ import com.yna.game.common.Util;
 public class UserManager {
 	
 	private static ConcurrentHashMap<String, JSONObject> onlineUsers = new ConcurrentHashMap<String, JSONObject>();
+	private static JSONArray topRichers = null;
+	private static Date topRichersLastUpdate;
 	private static final int NEW_USER_CASH = 100000;
+	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static final int LEADERBOARD_NUMB_USERS = 20;
 	
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
@@ -45,12 +44,12 @@ public class UserManager {
 	}
 	
 	// verify user when register
-	public static JSONObject verifyUser(String username, String password, Session session, ISFSApi sfsApi, Zone zone) {
+	public static JSONObject verifyUser(String username, String password, Session session, ISFSApi sfsApi) {
 		try {
 			// find user in cache
 			JSONObject user = getOnlineUser(username);
 			if (user == null) {
-				IDBManager dbManager = zone.getDBManager();
+				IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 				Connection connection = null;
 				PreparedStatement selectStatement = null;
 				ResultSet selectResultSet = null;
@@ -130,10 +129,10 @@ public class UserManager {
 	}
 	
 	// TO DO: remove unwanted field in return data 
-	public static JSONObject getUser(String username, Zone zone) throws JSONException {
+	public static JSONObject getUser(String username) throws JSONException {
 		JSONObject user = onlineUsers.get(username);
 		if (user == null) {
-			IDBManager dbManager = zone.getDBManager();
+			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 			Connection connection = null;
 			PreparedStatement selectStatement = null;
 			ResultSet selectResultSet = null;
@@ -142,6 +141,7 @@ public class UserManager {
 		    connection = dbManager.getConnection();
 		    // Throw error - cant get any connection
 		    if (connection == null) {
+					user = new JSONObject();
 		  		user.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
 					return user;
 		    } else {
@@ -192,18 +192,77 @@ public class UserManager {
 	}
 	
 	// FAKE for leaderboard - should have new function for leaderboard
-	public static JSONArray getAllUsers() {
-		JSONArray users = new JSONArray();
-		try {
-			for (JSONObject user : onlineUsers.values()) {
-				// FAKE win match number
-				user.put("winMatchNumb", new Random().nextInt(100));
-				users.put(user);
+//	public static JSONArray getAllUsers() {
+//		JSONArray users = new JSONArray();
+//		try {
+//			for (JSONObject user : onlineUsers.values()) {
+//				// FAKE win match number
+//				user.put("winMatchNumb", new Random().nextInt(100));
+//				users.put(user);
+//			}
+//		} catch (Exception exception) {
+//			Util.log("UserManager getAllUsers JSONObject Error:" + exception.toString());
+//		}
+//		return users;
+//	}
+	
+	// TO DO: get leaderboard by type
+	public static JSONArray getLeaderboardUsers() {
+		Date now = new Date();
+		if (topRichers == null || now.getTime() - topRichersLastUpdate.getTime() >= LEADERBOARD_UPDATE_INTERVAL * 1000) {
+  		Util.log("UserManager getLeaderboardUsers RELOAD LEADEARBOARD-------------");
+			topRichers = new JSONArray();
+			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
+			Connection connection = null;
+			PreparedStatement selectStatement = null;
+			ResultSet selectResultSet = null;
+	    try {
+		  	// Grab a connection from the DBManager connection pool
+		    connection = dbManager.getConnection();
+		    // Throw error - cant get any connection
+		    if (connection == null) {
+		  		Util.log("UserManager getLeaderboardUsers Exception No Connection in pool");
+					return new JSONArray();
+		    } else {
+		  		selectStatement = connection.prepareStatement("SELECT username, displayName, avatar, cash, bossKill, totalWin, biggestWin FROM user ORDER BY cash desc limit " + LEADERBOARD_NUMB_USERS);
+		      // Execute query
+			    selectResultSet = selectStatement.executeQuery();
+			    JSONObject user;
+			    while (selectResultSet.next()) {
+			    	user = new JSONObject();
+			    	user.put("username", selectResultSet.getString("username"));
+			    	user.put("displayName", selectResultSet.getString("displayName"));
+			    	user.put("cash", selectResultSet.getInt("cash"));
+			    	user.put("bossKill", selectResultSet.getInt("bossKill"));
+			    	user.put("totalWin", selectResultSet.getInt("totalWin"));
+			    	user.put("biggestWin", selectResultSet.getInt("biggestWin"));
+			    	topRichers.put(user);
+			    }
+		    }
+	    }
+	    catch (SQLException | JSONException e) {
+	  		Util.log("UserManager getLeaderboardUsers SQLException | JSONException: " + e.toString());
+				return new JSONArray();
+	    }
+
+			finally
+			{
+				// Return connection to the DBManager connection pool
+				try {
+					connection.close();
+					if (selectStatement != null) {
+						selectStatement.close();
+					}
+					if (selectResultSet != null) {
+						selectResultSet.close();
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
 			}
-		} catch (Exception exception) {
-			Util.log("UserManager getAllUsers JSONObject Error:" + exception.toString());
+			topRichersLastUpdate = now;
 		}
-		return users;
+		return topRichers;
 	}
 	
 	// Remove user from cache list
@@ -271,7 +330,7 @@ public class UserManager {
 		return onlineUsers.size();
 	}
 	
-	public static int registerUser(String username, JSONObject user, Zone zone) {
+	public static int registerUser(String username, JSONObject user) {
 		int errorCode = ErrorCode.User.NULL;
 		// add default data to new user
 		try {
@@ -280,7 +339,7 @@ public class UserManager {
 			Util.log("UserManager registerUser JSONObject Error:" + exception.toString());
 		}
 
-		IDBManager dbManager = zone.getDBManager();
+		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 		Connection connection = null;
 		PreparedStatement selectStatement = null;
 		ResultSet selectResultSet = null;
@@ -352,11 +411,15 @@ public class UserManager {
 		return errorCode;
 	}
 	
-	public static void saveUserToDB(String username, Zone zone) {
+	public static void saveUserToDB(String username) {
 		JSONObject user = getOnlineUser(username);
-		IDBManager dbManager = zone.getDBManager();
+		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 		Connection connection = null;
 		PreparedStatement updateStatement = null;
+		if (user == null) {
+  		Util.log("UserManager saveUserToDB CANT FIND USER IN CACHE " + username);
+			return;
+		}
 		try {
 			connection = dbManager.getConnection();
 			updateStatement = connection.prepareStatement("UPDATE user SET password=?, displayName=?,"
@@ -418,4 +481,6 @@ public class UserManager {
 		}
 		return user;
 	}
+	
+	// TO DO: remove user from cache when offline
 }

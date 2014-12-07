@@ -1,6 +1,5 @@
 package com.yna.game.smartfox;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +34,10 @@ public class GambleEventHandler extends BaseServerEventHandler {
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
 		JSONObject jsonData;
 		User user;
+		if (ClientRequestHandler.zone == null) {
+			ClientRequestHandler.zone = getParentExtension().getParentZone();
+		}
+		
 		switch (event.getType()) {
 		case USER_LOGIN:
 			String username = (String) event.getParameter(SFSEventParam.LOGIN_NAME);
@@ -48,7 +51,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 					Boolean isGuest = jsonData.getBoolean("isGuest");
 					trace("GambleEventHandler : USER_REGISTER " + username + " " + password + " guest:" + isGuest + "#");
 					// Register new user
-					errorCode = UserManager.registerUser(username, jsonData, getParentExtension().getParentZone());
+					errorCode = UserManager.registerUser(username, jsonData);
 					if (errorCode != ErrorCode.User.NULL) {
 						JSONObject error = new JSONObject();
 						error.put(ErrorCode.PARAM, errorCode);
@@ -60,7 +63,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 				} else {
 					trace("GambleEventHandler : USER_LOGIN " + username + " " + password);
 					// check user data
-					JSONObject data = UserManager.verifyUser(username, password, (Session)event.getParameter(SFSEventParam.SESSION), getApi(), getParentExtension().getParentZone());
+					JSONObject data = UserManager.verifyUser(username, password, (Session)event.getParameter(SFSEventParam.SESSION), getApi());
 					errorCode = data.getInt(ErrorCode.PARAM);
 					if (errorCode == ErrorCode.User.NULL) {
 						outData.putByteArray("jsonData", Util.StringToBytesArray(data.getJSONObject("user").toString()));
@@ -89,7 +92,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		case USER_DISCONNECT:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
-			UserManager.saveUserToDB(user.getName(), getParentExtension().getParentZone());
+			UserManager.saveUserToDB(user.getName());
 			break;
 		case PUBLIC_MESSAGE:
 			user = (User)event.getParameter(SFSEventParam.USER);
@@ -142,10 +145,10 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		}
 	}
 	
-	private void resetUserVariables(User player) {
-		try {
-		} catch (Exception exception) {
-			trace("resetUserGlobalRoomName:Exception:" + exception.toString());
-		}
-	}
+//	private void resetUserVariables(User player) {
+//		try {
+//		} catch (Exception exception) {
+//			trace("resetUserGlobalRoomName:Exception:" + exception.toString());
+//		}
+//	}
 }

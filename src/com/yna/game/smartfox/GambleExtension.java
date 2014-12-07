@@ -16,13 +16,15 @@ import com.yna.game.tienlen.models.TienLenManager;
 public class GambleExtension extends SFSExtension {
 	ScheduledFuture<?> taskManager;
 	
+	// TO DO: create slot machine lobby room dynamic, load jackpot from database
+	
 	@Override
 	public void init() {
 		TienLenManager.init(this);
 		SlotCombinations.Init();
 		trace("GambleExtension Init");
 		SmartFoxServer sfs = SmartFoxServer.getInstance();
-		sfs.getEventManager().setThreadPoolSize(20);
+//		sfs.getEventManager().setThreadPoolSize(20);
 		taskManager = sfs.getTaskScheduler().scheduleAtFixedRate(new TaskManager(), 0, 1, TimeUnit.SECONDS);
 		
 		UserRequestHandler.init();
@@ -45,6 +47,8 @@ public class GambleExtension extends SFSExtension {
 		removeEventHandler(SFSEventType.USER_DISCONNECT);
 		removeEventHandler(SFSEventType.USER_LEAVE_ROOM);
 		removeEventHandler(SFSEventType.PUBLIC_MESSAGE);
+		removeEventHandler(SFSEventType.BUDDY_LIST_INIT);
+
 		removeRequestHandler(GameId.TLMB);
 		removeRequestHandler(GameId.USER);
 		removeRequestHandler(GameId.SLOT_MACHINE);

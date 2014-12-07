@@ -1,6 +1,5 @@
 package com.yna.game.smartfox.handler;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -8,20 +7,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.smartfoxserver.bitswarm.sessions.ISession;
 import com.smartfoxserver.v2.annotations.MultiHandler;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
-import com.smartfoxserver.v2.api.SFSApi;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
 import com.smartfoxserver.v2.entities.User;
-import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
-import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.match.BoolMatch;
 import com.smartfoxserver.v2.entities.match.MatchExpression;
 import com.smartfoxserver.v2.entities.match.RoomProperties;
-import com.smartfoxserver.v2.entities.match.StringMatch;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
@@ -30,7 +24,6 @@ import com.smartfoxserver.v2.exceptions.SFSVariableException;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
-import com.yna.game.smartfox.GameId;
 import com.yna.game.smartfox.UserManager;
 import com.yna.game.slotmachine.models.Command;
 import com.yna.game.slotmachine.models.GameType;
@@ -41,9 +34,6 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private final int ROOM_NAME_LENGTH = 5;
 	private final int MAX_USERS_PER_ROOM = 5;
-	
-	private User exceptUser = null;
-	private JSONObject jsonData = null;
 	
 	@Override
 	protected void handleRequest(String commandId, User player, ISFSObject params, JSONObject out) {
@@ -294,4 +284,6 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			trace("removeUserOutOfSFSRoom:Exception:" + exception.toString());
 		}
 	}
+	
+	// TO DO: save jackpot data to db
 }

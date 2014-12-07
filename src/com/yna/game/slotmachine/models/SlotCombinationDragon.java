@@ -45,9 +45,9 @@ public class SlotCombinationDragon {
     { 0, 0, 5, 7, 15 }
   };
   
-  private static final int DRAGON_FIRE = 0;
-	private static final int DRAGON_ICE = 1;
-	private static final int DRAGON_DARK = 2;
+//  private static final int DRAGON_FIRE = 0;
+//	private static final int DRAGON_ICE = 1;
+//	private static final int DRAGON_DARK = 2;
 
 	private static int[] DRAGON_HP = new int[] { 500000, 700000, 1000000};
 	
