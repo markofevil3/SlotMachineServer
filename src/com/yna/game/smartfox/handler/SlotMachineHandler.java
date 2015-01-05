@@ -192,7 +192,6 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			Room createdRoom = sfsApi.createRoom(zone, roomSettings, null, true, null);
 			// Set room variable base on room type
 			JSONObject roomData = GameType.SetGameVariable(gameType, player, createdRoom, sfsApi);
-			
 			sfsApi.joinRoom(player, createdRoom, null, false, null, true, false);
 			player.setVariable(new SFSUserVariable("gRoomId", roomName, true));
 			out.put("roomId", createdRoom.getName());
@@ -220,9 +219,9 @@ public class SlotMachineHandler extends ClientRequestHandler {
 				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
 			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType);
-			freeSpin += winResults.getInt("freeRunCount");
+			freeSpin += winResults.getInt("frCount");
 			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
-			JSONArray winningGold = winResults.getJSONArray("winningGold");
+			JSONArray winningGold = winResults.getJSONArray("wGold");
 			int totalWin = 0; 
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 			int crtJackpot = lobbyRoom.getVariable("jackpot").getIntValue();
@@ -230,7 +229,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			for (int i = 0; i < winningGold.length(); i++) {
 				totalWin += winningGold.getInt(i);
 			}
-			if (winResults.getBoolean("isJackpot")) {
+			if (winResults.getBoolean("isJP")) {
 				totalWin += crtJackpot;
 				crtJackpot = 0;
 			}
@@ -241,11 +240,11 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			Room gameRoom = zone.getRoomByName(player.getVariable("gRoomId").getStringValue());
 			JSONObject spinData = new JSONObject();
 			spinData.put("totalWin", totalWin);
-			spinData.put("winningGold", winningGold);
+			spinData.put("wGold", winningGold);
 			JSONObject specialData = GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, spinData);
 			out.put("specials", specialData);
 			
-			out.put("isBigWin", totalWin > totalCost * 10);
+			out.put("bWin", totalWin > totalCost * 10);
 			if (isFreeSpin) {
 				totalCost = 0;
 			}
@@ -260,7 +259,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			out.put("items", randomItems);
 			out.put("winResults", winResults);
 			out.put("cost", totalCost);
-			out.put("freeSpinLeft", freeSpin);
+			out.put("frLeft", freeSpin);
 		} catch (JSONException | SFSVariableException e) {
 			trace("handlePlayCommand:" + e.toString());
 		}

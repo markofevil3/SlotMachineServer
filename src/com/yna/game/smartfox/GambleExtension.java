@@ -7,9 +7,6 @@ import java.sql.SQLException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
 import com.smartfoxserver.v2.core.SFSEventType;
@@ -19,10 +16,7 @@ import com.smartfoxserver.v2.entities.SFSRoomRemoveMode;
 import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
-import com.smartfoxserver.v2.entities.variables.SFSUserVariable;
 import com.smartfoxserver.v2.extensions.SFSExtension;
-import com.yna.game.common.ErrorCode;
-import com.yna.game.common.Util;
 import com.yna.game.slotmachine.models.GameType;
 import com.yna.game.slotmachine.models.SlotCombinations;
 import com.yna.game.smartfox.handler.SlotMachineHandler;
@@ -88,6 +82,7 @@ public class GambleExtension extends SFSExtension {
 		int jackpotDragon = 0;
 		int jackpotHalloween = 0;
 		int jackpotFruit = 0;
+		int jackpotPirate = 0;
     try {
 	  	// Grab a connection from the DBManager connection pool
 	    connection = dbManager.getConnection();
@@ -95,10 +90,11 @@ public class GambleExtension extends SFSExtension {
 	    if (connection == null) {
 	  		trace("createLobbyRooms NO CONNECTION AVAILABLE");
 	    } else {
-	  		selectStatement = connection.prepareStatement("SELECT * FROM jackpots WHERE (gType=? OR gType=? OR gType=?) AND username IS NULL");
+	  		selectStatement = connection.prepareStatement("SELECT * FROM jackpots WHERE (gType=? OR gType=? OR gType=? OR gType=?) AND username IS NULL");
 	  		selectStatement.setString(1, GameType.SLOT_TYPE_FRUITS);
 	  		selectStatement.setString(2, GameType.SLOT_TYPE_HALLOWEEN);
 	  		selectStatement.setString(3, GameType.SLOT_TYPE_DRAGON);
+	  		selectStatement.setString(4, GameType.SLOT_TYPE_PIRATE);
 	      // Execute query
 		    selectResultSet = selectStatement.executeQuery();
 		    while (selectResultSet.next()) {
@@ -111,6 +107,9 @@ public class GambleExtension extends SFSExtension {
 		    		break;
 		    	case GameType.SLOT_TYPE_FRUITS:
 		    		jackpotFruit = selectResultSet.getInt("val");
+		    		break;
+		    	case GameType.SLOT_TYPE_PIRATE:
+		    		jackpotPirate = selectResultSet.getInt("val");
 		    		break;
 		    	}
 		    }
@@ -151,6 +150,12 @@ public class GambleExtension extends SFSExtension {
 			RoomVariable jackpot = new SFSRoomVariable("jackpot", jackpotDragon);
 			createdRoom.setVariable(jackpot);
 			trace("DRAGON " + jackpotDragon);
+			// Set lobby PIRATE room
+			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_PIRATE));
+			createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);
+			jackpot = new SFSRoomVariable("jackpot", jackpotPirate);
+			createdRoom.setVariable(jackpot);
+			trace("PIRATE " + jackpotPirate);
 			// Set lobby HALLOWEEN room
 			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_HALLOWEEN));
 			createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);

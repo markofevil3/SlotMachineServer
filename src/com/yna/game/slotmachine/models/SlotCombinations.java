@@ -89,6 +89,7 @@ public class SlotCombinations {
   	SlotCombinationFruit.Init();
   	SlotCombinationHalloween.Init();
   	SlotCombinationDragon.Init();
+  	SlotCombinationPirate.Init();
   }
     
   public static int RandomItem(boolean isFreeSpin, String gameType) {
@@ -172,10 +173,10 @@ public class SlotCombinations {
     	}
     }
     try {
-			results.put("winningGold", new JSONArray(winningGold));
-	    results.put("isJackpot", isJackpot);
+			results.put("wGold", new JSONArray(winningGold));
+	    results.put("isJP", isJackpot);
 //	    results.put("isSpecial", specialCount > 0);
-	    results.put("freeRunCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);
+	    results.put("frCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);
 		} catch (JSONException e) {
 			Util.log("CalculateCombination JSONObject error: " + e.toString());
 		}

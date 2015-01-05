@@ -14,6 +14,7 @@ public class GameType {
 	public static final String SLOT_TYPE_FRUITS = "slot_fruit";
 	public static final String SLOT_TYPE_HALLOWEEN = "slot_halloween";
 	public static final String SLOT_TYPE_DRAGON = "slot_dragon";
+	public static final String SLOT_TYPE_PIRATE= "slot_pirate";
 	
 	private static final String FRUIT_LOBBY_ROOM = "fruitLobby";
 	private static final String FRUIT_ROOM_GROUP = "fruitRooms";
@@ -27,6 +28,9 @@ public class GameType {
 	private static final String DRAGON_ROOM_GROUP = "dragonRooms";
 	private static final String DRAGON_ROOM_NAME = "dRoom";
 
+	private static final String PIRATE_LOBBY_ROOM = "pirateLobby";
+	private static final String PIRATE_ROOM_GROUP = "pirateRooms";
+	private static final String PIRATE_ROOM_NAME = "pRoom";
 	
 	public static String GetLoobyRoom(String gameType) {
 		switch (gameType) {
@@ -36,6 +40,8 @@ public class GameType {
 			return HALLOWEEN_LOBBY_ROOM;
 		case SLOT_TYPE_DRAGON:
 			return DRAGON_LOBBY_ROOM;
+		case SLOT_TYPE_PIRATE:
+			return PIRATE_LOBBY_ROOM;
 		}
 		return null;
 	}
@@ -48,6 +54,8 @@ public class GameType {
 			return HALLOWEEN_ROOM_GROUP;
 		case SLOT_TYPE_DRAGON:
 			return DRAGON_ROOM_GROUP;
+		case SLOT_TYPE_PIRATE:
+			return PIRATE_ROOM_GROUP;
 		}
 		return null;
 	}
@@ -60,6 +68,8 @@ public class GameType {
 			return HALLOWEEN_ROOM_NAME;
 		case SLOT_TYPE_DRAGON:
 			return DRAGON_ROOM_NAME;
+		case SLOT_TYPE_PIRATE:
+			return PIRATE_ROOM_NAME;
 		}
 		return null;
 	}
@@ -72,6 +82,8 @@ public class GameType {
 			return SlotCombinationHalloween.random;
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.random;
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.random;
 		}
 		Util.log("######GameType - GetRandomMethod null : " + gameType);
 		return new Random();
@@ -85,6 +97,8 @@ public class GameType {
 			return SlotCombinationHalloween.SPECIAL_ITEM_RATES;
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.SPECIAL_ITEM_RATES;
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.SPECIAL_ITEM_RATES;
 		}
 		Util.log("######GameType - GetSpecialItemRate null : " + gameType);
 		return null;
@@ -98,6 +112,8 @@ public class GameType {
 			return SlotCombinationHalloween.ITEM_RATES;
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.ITEM_RATES;
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.ITEM_RATES;
 		}
 		Util.log("######GameType - GetItemRate null : " + gameType);
 		return null;
@@ -111,6 +127,8 @@ public class GameType {
 			return SlotCombinationHalloween.PAYOUTS;
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.PAYOUTS;
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.PAYOUTS;
 		}
 		Util.log("######GameType - GetPayout null : " + gameType);
 		return null;
@@ -124,6 +142,8 @@ public class GameType {
 			return SlotCombinationHalloween.SetGameVariable(player, room, sfsApi);
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.SetGameVariable(player, room, sfsApi);
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.SetGameVariable(player, room, sfsApi);
 		}
 		return new JSONObject();
 	}
@@ -136,6 +156,8 @@ public class GameType {
 			return SlotCombinationHalloween.UpdateGameVariable(player, room, sfsApi, jsonData);
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.UpdateGameVariable(player, room, sfsApi, jsonData);
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.UpdateGameVariable(player, room, sfsApi, jsonData);
 		}
 		return new JSONObject();
 	}
@@ -148,6 +170,8 @@ public class GameType {
 			return SlotCombinationHalloween.GetGameVariable(player, room);
 		case SLOT_TYPE_DRAGON:
 			return SlotCombinationDragon.GetGameVariable(player, room);
+		case SLOT_TYPE_PIRATE:
+			return SlotCombinationPirate.GetGameVariable(player, room);
 		}
 		return new JSONObject();
 	}
