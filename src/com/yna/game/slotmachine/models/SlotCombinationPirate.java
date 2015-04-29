@@ -16,7 +16,7 @@ import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.yna.game.common.Util;
 
-public class SlotCombinationDragon {
+public class SlotCombinationPirate {
   public static Random random;
   public static int[] ITEM_RATES = new int[] {3, 8, 12, 11, 11, 10, 9, 8, 8, 6, 14};
   public static int[] SPECIAL_ITEM_RATES = new int[] {3, 0, 0, 10, 14, 18, 16, 16, 14, 9, 0};  
@@ -45,27 +45,27 @@ public class SlotCombinationDragon {
     { 0, 0, 5, 7, 15 }
   };
   
-//  private static final int DRAGON_FIRE = 0;
-//	private static final int DRAGON_ICE = 1;
-//	private static final int DRAGON_DARK = 2;
+//  private static final int BOSS_FIRE = 0;
+//	private static final int BOSS_ICE = 1;
+//	private static final int BOSS_DARK = 2;
 
-	private static int[] DRAGON_HP = new int[] { 500000, 700000, 1000000};
+	private static int[] BOSS_HP = new int[] { 500000, 700000, 1000000};
 	
-  private static int[][] DRAGON_DROP_CASH = new int[][] {
-    // DRAGON_FIRE
+  private static int[][] BOSS_DROP_CASH = new int[][] {
+    // BOSS_FIRE
     { 50000, 100000, 150000 },
-    // DRAGON_ICE
+    // BOSS_ICE
     { 150000, 200000, 250000 },
-    // DRAGON_DARK
+    // BOSS_DARK
     { 300000, 350000, 400000 },
   };
   
-  private static int[][] DRAGON_DROP_GEM = new int[][] {
-    // DRAGON_FIRE
+  private static int[][] BOSS_DROP_GEM = new int[][] {
+    // BOSS_FIRE
     { 0, 0, 1 },
-    // DRAGON_ICE
+    // BOSS_ICE
     { 0, 1, 2 },
-    // DRAGON_DARK
+    // BOSS_DARK
     { 1, 2, 3 },
   };
   
@@ -75,56 +75,64 @@ public class SlotCombinationDragon {
 	}
 	
 	public static JSONObject SetGameVariable(User player, Room room, SFSApi sfsApi) {
-		int dIndex = SpawnDragon();
+		int dIndex = SpawnBoss(room.containsVariable("dIndex") ? room.getVariable("dIndex").getIntValue() : -1);
 		RoomVariable dragonIndex = new SFSRoomVariable("dIndex", dIndex);
-    RoomVariable dragonHP = new SFSRoomVariable("dHP", DRAGON_HP[dIndex]);
+    RoomVariable dragonHP = new SFSRoomVariable("dHP", BOSS_HP[dIndex]);
     sfsApi.setRoomVariables(null, room, Arrays.asList(dragonIndex, dragonHP), false, false, false);
     JSONObject jsonData = new JSONObject();
     try {
 			jsonData.put("dIndex", dIndex);
-	    jsonData.put("dHP", DRAGON_HP[dIndex]);
-	    jsonData.put("dMaxHP", DRAGON_HP[dIndex]);
+	    jsonData.put("dHP", BOSS_HP[dIndex]);
+	    jsonData.put("dMaxHP", BOSS_HP[dIndex]);
 		} catch (JSONException e) {
-			Util.log("SlotCombinationDragon SetGameVariable " + e.toString());
+			Util.log("SlotCombinationPirate SetGameVariable " + e.toString());
 		}
     return jsonData;
 	}
 	
-	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData, int totalWin) {
+	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject out, int totalWin) {
     try {
 			int dHP = room.getVariable("dHP").getIntValue();
+			int dIndex = room.getVariable("dIndex").getIntValue();
 			int damage = totalWin;
 			if (damage > 0) {
+		    JSONObject dataToOthers = new JSONObject();
 				dHP = Math.max(0, dHP - damage);
-		    // To do: spawn new dragon if old is dead, random treasure and add for users
+		    // To do: spawn new boss if old is dead, random treasure and add for other users (not the one who killed boss)
 				if (dHP == 0) {
 					// random treasure
 					int dropIndex = RandomDrop();
-		    	int dIndex = room.getVariable("dIndex").getIntValue(); 
 					JSONArray dropItems = new JSONArray();
 					// TO do: add drop to user data
-					dropItems.put(DRAGON_DROP_CASH[dIndex][dropIndex]);
-					dropItems.put(DRAGON_DROP_GEM[dIndex][dropIndex]);
-					jsonData.put("dropItems", dropItems);
-					// spawn new dragon
-					JSONObject newDragon = SetGameVariable(player, room, sfsApi);
-					jsonData.put("newBoss", newDragon);
+					dropItems.put(BOSS_DROP_CASH[dIndex][dropIndex]);
+					dropItems.put(BOSS_DROP_GEM[dIndex][dropIndex]);
+					out.put("dropItems", dropItems);
+					dataToOthers.put("dropItems", dropItems);
+					// spawn new BOSS
+					JSONObject newBoss = SetGameVariable(player, room, sfsApi);
+					out.put("newBoss", newBoss);
+					dataToOthers.put("newBoss", newBoss);
 				} else {
 			    RoomVariable dragonHP = new SFSRoomVariable("dHP", dHP);
 			    sfsApi.setRoomVariables(null, room, Arrays.asList(dragonHP), false, false, false);
 				}
-		    jsonData.put("dHP", dHP);
-				ISFSObject out = new SFSObject();
-				out.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
-				out.putUtfString("cmd", Command.SLOT_PLAY);
-				out.putUtfString("message", "");
-		    sfsApi.sendPublicMessage(room, player, "Admin", out);
-		    return jsonData;
+				out.put("dHP", dHP);
+				out.put("dIndex", dIndex);
+				dataToOthers.put("dHP", dHP);
+				dataToOthers.put("dIndex", dIndex);
+				dataToOthers.put("items", out.getJSONArray("items"));
+				dataToOthers.put("wGold", out.getJSONArray("wGold"));
+				ISFSObject outPublicMess = new SFSObject();
+				outPublicMess.putByteArray("jsonData", Util.StringToBytesArray(dataToOthers.toString()));
+				outPublicMess.putUtfString("cmd", Command.SLOT_PLAY);
+				outPublicMess.putUtfString("message", "");
+		    sfsApi.sendPublicMessage(room, player, "Admin", outPublicMess);
+		    return out;
 			}
 		} catch (JSONException e) {
-			Util.log("SlotCombinationDragon UpdateGameVariable " + e.toString());
+			Util.log("SlotCombinationPirate UpdateGameVariable " + e.toString());
 		}
-    return new JSONObject();
+    return out;
 	}
 	
 	public static JSONObject GetGameVariable(User player, Room room) {
@@ -133,18 +141,21 @@ public class SlotCombinationDragon {
     	int dIndex = room.getVariable("dIndex").getIntValue(); 
 			jsonData.put("dIndex", dIndex);
 	    jsonData.put("dHP", room.getVariable("dHP").getIntValue());
-	    jsonData.put("dMaxHP", DRAGON_HP[dIndex]);
+	    jsonData.put("dMaxHP", BOSS_HP[dIndex]);
 		} catch (JSONException e) {
-			Util.log("SlotCombinationDragon GetGameVariable " + e.toString());
+			Util.log("SlotCombinationPirate GetGameVariable " + e.toString());
 		}
     return jsonData;
 	}
 	
-	private static int SpawnDragon() {
-		return random.nextInt(DRAGON_HP.length);
+	private static int SpawnBoss(int crtBossIndex) {
+		if (crtBossIndex != -1) {
+			return (crtBossIndex + 1) % BOSS_HP.length;
+		}
+		return random.nextInt(BOSS_HP.length);
 	}
 	
 	private static int RandomDrop() {
-		return random.nextInt(DRAGON_DROP_CASH[0].length);
+		return random.nextInt(BOSS_DROP_CASH[0].length);
 	}
 }

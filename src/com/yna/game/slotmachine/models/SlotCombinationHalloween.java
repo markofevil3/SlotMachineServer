@@ -46,7 +46,7 @@ public class SlotCombinationHalloween {
 		return new JSONObject();
 	}
 	
-	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData) {
+	public static JSONObject UpdateGameVariable(User player, Room room, SFSApi sfsApi, JSONObject jsonData, int totalWin) {
 		return new JSONObject();
 	}
 	

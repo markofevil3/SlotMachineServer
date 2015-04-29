@@ -218,10 +218,10 @@ public class SlotMachineHandler extends ClientRequestHandler {
 				freeSpin -= 1;
 				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
-			JSONObject winResults = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType);
-			freeSpin += winResults.getInt("frCount");
+			out = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType, out);
+			freeSpin += out.getInt("frCount");
 			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
-			JSONArray winningGold = winResults.getJSONArray("wGold");
+			JSONArray winningGold = out.getJSONArray("wGold");
 			int totalWin = 0; 
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 			int crtJackpot = lobbyRoom.getVariable("jackpot").getIntValue();
@@ -229,7 +229,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			for (int i = 0; i < winningGold.length(); i++) {
 				totalWin += winningGold.getInt(i);
 			}
-			if (winResults.getBoolean("isJP")) {
+			if (out.getBoolean("isJP")) {
 				totalWin += crtJackpot;
 				crtJackpot = 0;
 			}
@@ -238,11 +238,9 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			sfsApi.setRoomVariables(null, lobbyRoom, Arrays.asList(jackpot));
 			lobbyRoom.setVariable(jackpot);
 			Room gameRoom = zone.getRoomByName(player.getVariable("gRoomId").getStringValue());
-			JSONObject spinData = new JSONObject();
-			spinData.put("totalWin", totalWin);
-			spinData.put("wGold", winningGold);
-			JSONObject specialData = GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, spinData);
-			out.put("specials", specialData);
+			out.put("items", new JSONArray(randomItems));
+
+			out = GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, out, totalWin);
 			
 			out.put("bWin", totalWin > totalCost * 10);
 			if (isFreeSpin) {
@@ -251,13 +249,11 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			
 			// If boss drop items, add it to user account
 			// To do: add gem
-			if (specialData.has("dropItems")) {
-				totalWin += specialData.getJSONArray("dropItems").getInt(0);
+			if (out.has("dropItems")) {
+				totalWin += out.getJSONArray("dropItems").getInt(0);
 			}
 			
 			updatePlayerCash(player, totalWin - totalCost);
-			out.put("items", randomItems);
-			out.put("winResults", winResults);
 			out.put("cost", totalCost);
 			out.put("frLeft", freeSpin);
 		} catch (JSONException | SFSVariableException e) {

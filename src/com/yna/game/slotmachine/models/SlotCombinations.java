@@ -130,7 +130,7 @@ public class SlotCombinations {
   }
   
   // input data is array type of 15 items - output data is array winning gold of 9 lines
-  public static JSONObject CalculateCombination(int[] reelData, int numLines, int betPerLine, String gameType) {
+  public static JSONObject CalculateCombination(int[] reelData, int numLines, int betPerLine, String gameType, JSONObject out) {
   	JSONObject results = new JSONObject();
     int[] winningLineCount = new int[numLines];
     int[] winningLineType = new int[numLines];
@@ -173,13 +173,13 @@ public class SlotCombinations {
     	}
     }
     try {
-			results.put("wGold", new JSONArray(winningGold));
-	    results.put("isJP", isJackpot);
+    	out.put("wGold", new JSONArray(winningGold));
+    	out.put("isJP", isJackpot);
 //	    results.put("isSpecial", specialCount > 0);
-	    results.put("frCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);
+    	out.put("frCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);
 		} catch (JSONException e) {
 			Util.log("CalculateCombination JSONObject error: " + e.toString());
 		}
-    return results;
+    return out;
   }
 }
