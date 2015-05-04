@@ -24,7 +24,9 @@ import java.sql.SQLException;
 
 
 
+
 import com.yna.game.common.ErrorCode;
+import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
 
 public class UserManager {
@@ -32,10 +34,12 @@ public class UserManager {
 	private static ConcurrentHashMap<String, JSONObject> onlineUsers = new ConcurrentHashMap<String, JSONObject>();
 	private static JSONArray topRichers = null;
 	private static Date topRichersLastUpdate;
-	private static final int NEW_USER_CASH = 100000;
-	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
+//	private static final int NEW_USER_CASH = 100000;
+//	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-	private static final int LEADERBOARD_NUMB_USERS = 20;
+//	private static final int LEADERBOARD_NUMB_USERS = 20;
+//	private static final int DAILY_REWARD_MINS = 5;
+//	private static final int DAILY_REWARD_CASH = 50000;
 	
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
@@ -191,6 +195,48 @@ public class UserManager {
 		}
 	}
 	
+	public static void updatePlayerCash(JSONObject userData, int updateVal) {
+		try {
+			int newVal = Math.max(0 ,userData.getInt("cash") + updateVal);
+			userData.put("cash", newVal);
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
+	}
+	
+	public static long updateLastClaimDailyTime(String username) {
+		try {
+			JSONObject userData = getOnlineUser(username);
+			long crtTime = System.currentTimeMillis();
+			userData.put("lastDaily", crtTime);
+			return System.currentTimeMillis();
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+			return 0;
+		}
+	}
+	
+	public static JSONObject claimDailyReward(String username, JSONObject out) {
+		try {
+			JSONObject userData = getOnlineUser(username);
+			long lastClaimedTime = userData.getLong("lastDaily");
+			long crtTime = System.currentTimeMillis();
+
+			if (lastClaimedTime == 0 || crtTime - lastClaimedTime >= GameConstants.DAILY_REWARD_MILI) {
+				updatePlayerCash(userData, GameConstants.DAILY_REWARD_CASH);
+				userData.put("lastDaily", crtTime);
+				out.put("lastDaily", crtTime);
+				out.put("cash", GameConstants.DAILY_REWARD_CASH);
+			} else {
+				out.put(ErrorCode.PARAM, ErrorCode.User.CANT_CLAIM_DAILY_YET);
+			}
+			return out;
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
+		return out;
+	}
+	
 	// FAKE for leaderboard - should have new function for leaderboard
 //	public static JSONArray getAllUsers() {
 //		JSONArray users = new JSONArray();
@@ -209,7 +255,7 @@ public class UserManager {
 	// TO DO: get leaderboard by type
 	public static JSONArray getLeaderboardUsers() {
 		Date now = new Date();
-		if (topRichers == null || now.getTime() - topRichersLastUpdate.getTime() >= LEADERBOARD_UPDATE_INTERVAL * 1000) {
+		if (topRichers == null || now.getTime() - topRichersLastUpdate.getTime() >= GameConstants.LEADERBOARD_UPDATE_INTERVAL * 1000) {
   		Util.log("UserManager getLeaderboardUsers RELOAD LEADEARBOARD-------------");
 			topRichers = new JSONArray();
 			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
@@ -224,7 +270,7 @@ public class UserManager {
 		  		Util.log("UserManager getLeaderboardUsers Exception No Connection in pool");
 					return new JSONArray();
 		    } else {
-		  		selectStatement = connection.prepareStatement("SELECT username, displayName, avatar, cash, bossKill, totalWin, biggestWin FROM user ORDER BY cash desc limit " + LEADERBOARD_NUMB_USERS);
+		  		selectStatement = connection.prepareStatement("SELECT username, displayName, avatar, cash, bossKill, totalWin, biggestWin FROM user ORDER BY cash desc limit " + GameConstants.LEADERBOARD_NUMB_USERS);
 		      // Execute query
 			    selectResultSet = selectStatement.executeQuery();
 			    JSONObject user;
@@ -334,7 +380,7 @@ public class UserManager {
 		int errorCode = ErrorCode.User.NULL;
 		// add default data to new user
 		try {
-			user.put("cash", NEW_USER_CASH);
+			user.put("cash", GameConstants.NEW_USER_CASH);
 		} catch (Exception exception) {
 			Util.log("UserManager registerUser JSONObject Error:" + exception.toString());
 		}
@@ -424,7 +470,7 @@ public class UserManager {
 			connection = dbManager.getConnection();
 			updateStatement = connection.prepareStatement("UPDATE user SET password=?, displayName=?,"
 																																	+ "email=?, avatar=?, cash=?, gem=?, lastLogin=?,"
-																																	+ "facebookId=?, bossKill=?, totalWin=?, biggestWin=? WHERE username=?");
+																																	+ "facebookId=?, bossKill=?, totalWin=?, biggestWin=?, lastClaimedDaily=? WHERE username=?");
 			updateStatement.setString(1, user.getString("password"));
 			updateStatement.setString(2, user.getString("displayName"));
 			updateStatement.setString(3, user.getString("email"));
@@ -436,7 +482,8 @@ public class UserManager {
 			updateStatement.setInt(9, user.getInt("bossKill"));
 			updateStatement.setInt(10, user.getInt("totalWin"));
 			updateStatement.setInt(11, user.getInt("biggestWin"));
-			updateStatement.setString(12, username);
+			updateStatement.setLong(12, user.getLong("lastDaily"));
+			updateStatement.setString(13, username);
 	    // Execute query
 			updateStatement.executeUpdate();
 		} catch (SQLException | JSONException e) {
@@ -474,6 +521,7 @@ public class UserManager {
 			user.put("bossKill", userResultSet.getInt("bossKill"));
 			user.put("totalWin", userResultSet.getInt("totalWin"));
 			user.put("biggestWin", userResultSet.getInt("biggestWin"));
+			user.put("lastDaily", userResultSet.getLong("lastClaimedDaily"));
 		} catch (JSONException e) {
   		Util.log("UserManager createUserJSONData JSONException: " + e.toString());
 		} catch (SQLException e) {

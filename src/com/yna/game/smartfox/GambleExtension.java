@@ -35,6 +35,8 @@ public class GambleExtension extends SFSExtension {
 	public void init() {
 		TienLenManager.init(this);
 		SlotCombinations.Init();
+		TaskManager.Init();
+
 		trace("GambleExtension Init");
 		SmartFoxServer sfs = SmartFoxServer.getInstance();
 //		sfs.getEventManager().setThreadPoolSize(20);

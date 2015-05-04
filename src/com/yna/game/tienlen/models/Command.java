@@ -21,5 +21,5 @@ public class Command {
 	public static final String LOAD_USER_INFO = "loadUserInfo";
 	public static final String ADD_FRIEND = "addFriend";
 	public static final String INVITE_TO_GAME = "inviteToGame";
-
+	public static final String CLAIM_DAILY = "claimDaily";
 }

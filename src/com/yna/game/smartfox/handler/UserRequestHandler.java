@@ -17,6 +17,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.invitation.Invitation;
 import com.smartfoxserver.v2.entities.invitation.InvitationCallback;
 import com.yna.game.common.ErrorCode;
+import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
 import com.yna.game.smartfox.UserManager;
@@ -26,8 +27,6 @@ import com.yna.game.tienlen.models.Command;
 public class UserRequestHandler extends ClientRequestHandler {
 	
 	private static ISFSGameApi gameAPI;
-
-	private final int  INVITE_MESSAGE_EXPIRED_SECONDS = 50;
 	
 	public static void init() {
 		gameAPI = SmartFoxServer.getInstance().getAPIManager().getGameApi();
@@ -66,9 +65,19 @@ public class UserRequestHandler extends ClientRequestHandler {
 		case Command.INVITE_TO_GAME:
 			handleCommandInviteToGame(player, jsonData, out);
 			break;
-			
+		case Command.CLAIM_DAILY:
+			handleCommandClaimDaily(player, jsonData, out);
+			break;
 		}
 	}
+	
+	private void handleCommandClaimDaily(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			out = UserManager.claimDailyReward(jsonData.getString("username"), out);
+		} catch (Exception exception) {
+			trace("handleCommandClaimDaily:JSONObject Exception:" + exception.toString());
+		}
+	}	
 	
 	private void handleLoadLeaderboardCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
@@ -112,7 +121,7 @@ public class UserRequestHandler extends ClientRequestHandler {
 			params.putUtfString("message", jsonData.getString("message"));
 			params.putUtfString("roomName", jsonData.getString("roomName"));
 
-	    gameAPI.sendInvitation(player, invitees, INVITE_MESSAGE_EXPIRED_SECONDS, new InvitationCallback() {
+	    gameAPI.sendInvitation(player, invitees, GameConstants.INVITE_MESSAGE_EXPIRED_SECONDS, new InvitationCallback() {
         @Override
         public void onRefused(Invitation invObj, ISFSObject params)
         {
