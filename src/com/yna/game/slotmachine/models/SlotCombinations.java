@@ -174,6 +174,7 @@ public class SlotCombinations {
     }
     try {
     	out.put("wGold", new JSONArray(winningGold));
+    	out.put("nL", numLines);
     	out.put("isJP", isJackpot);
 //	    results.put("isSpecial", specialCount > 0);
     	out.put("frCount", specialCount > 0 ? PAYOUTS[SlotItem.SPECIAL][specialCount - 1] : 0);

@@ -122,6 +122,7 @@ public class SlotCombinationPirate {
 				dataToOthers.put("dIndex", dIndex);
 				dataToOthers.put("items", out.getJSONArray("items"));
 				dataToOthers.put("wGold", out.getJSONArray("wGold"));
+				dataToOthers.put("nL", out.getInt("numLines"));
 				ISFSObject outPublicMess = new SFSObject();
 				outPublicMess.putByteArray("jsonData", Util.StringToBytesArray(dataToOthers.toString()));
 				outPublicMess.putUtfString("cmd", Command.SLOT_PLAY);
