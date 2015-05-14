@@ -1,6 +1,7 @@
 package com.yna.game.slotmachine.models;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.json.JSONArray;
@@ -15,6 +16,7 @@ import com.smartfoxserver.v2.entities.data.SFSObject;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.yna.game.common.Util;
+import com.yna.game.smartfox.UserManager;
 
 public class SlotCombinationPirate {
   public static Random random;
@@ -98,16 +100,22 @@ public class SlotCombinationPirate {
 			if (damage > 0) {
 		    JSONObject dataToOthers = new JSONObject();
 				dHP = Math.max(0, dHP - damage);
-		    // To do: spawn new boss if old is dead, random treasure and add for other users (not the one who killed boss)
+		    // To do: no add Gem because could be remove
 				if (dHP == 0) {
 					// random treasure
 					int dropIndex = RandomDrop();
 					JSONArray dropItems = new JSONArray();
-					// TO do: add drop to user data
 					dropItems.put(BOSS_DROP_CASH[dIndex][dropIndex]);
 					dropItems.put(BOSS_DROP_GEM[dIndex][dropIndex]);
 					out.put("dropItems", dropItems);
 					dataToOthers.put("dropItems", dropItems);
+					List<User> usersInRoom = room.getUserList();
+					for (int i = 0; i < usersInRoom.size(); i++) {
+						String mUsername = usersInRoom.get(i).getName();
+						if (mUsername != player.getName()) {
+							UserManager.updatePlayerCashAndKill(mUsername, BOSS_DROP_CASH[dIndex][dropIndex], 1);
+						}
+					}
 					// spawn new BOSS
 					JSONObject newBoss = SetGameVariable(player, room, sfsApi);
 					out.put("newBoss", newBoss);
@@ -122,7 +130,7 @@ public class SlotCombinationPirate {
 				dataToOthers.put("dIndex", dIndex);
 				dataToOthers.put("items", out.getJSONArray("items"));
 				dataToOthers.put("wGold", out.getJSONArray("wGold"));
-				dataToOthers.put("nL", out.getInt("numLines"));
+				dataToOthers.put("nL", out.getInt("nL"));
 				ISFSObject outPublicMess = new SFSObject();
 				outPublicMess.putByteArray("jsonData", Util.StringToBytesArray(dataToOthers.toString()));
 				outPublicMess.putUtfString("cmd", Command.SLOT_PLAY);

@@ -47,6 +47,84 @@ public class UserManager {
 		Util.log("onlineUsers Count: " + onlineUsers.size());
 	}
 	
+	public static JSONObject verifyFBUser(String fbID, JSONObject jsonData, Session session, ISFSApi sfsApi) {
+		try {
+			// find user in cache
+			JSONObject user = null;
+			if (user == null) {
+				IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
+				Connection connection = null;
+				PreparedStatement selectStatement = null;
+				ResultSet selectResultSet = null;
+		    try {
+			  	// Grab a connection from the DBManager connection pool
+			    connection = dbManager.getConnection();
+			    // Throw error - cant get any connection
+			    if (connection == null) {
+			  		JSONObject error = new JSONObject();
+						error.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
+						return error;
+			    } else {
+			  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE facebookId=?");
+			  		selectStatement.setString(1, fbID);
+			      // Execute query
+				    selectResultSet = selectStatement.executeQuery();
+						if (selectResultSet.first()) {
+							user = new JSONObject();
+							createUserJSONData(user, selectResultSet);
+						}
+			    }
+		    }
+		    // facebookId was not found
+		    catch (SQLException | JSONException e) {
+		  		Util.log("UserManager verifyUser SQLException | JSONException: " + e.toString());
+		  		JSONObject error = new JSONObject();
+					error.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
+					return error;
+		    }
+
+				finally
+				{
+					// Return connection to the DBManager connection pool
+					try {
+						connection.close();
+						if (selectStatement != null) {
+							selectStatement.close();
+						}
+						if (selectResultSet != null) {
+							selectResultSet.close();
+						}
+					} catch (SQLException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			// create new user using FB ID
+			if (user == null) {
+				JSONObject data = new JSONObject();
+				int error = registerUser(fbID, jsonData, true);
+				jsonData.put("isRegister", true);
+				data.put(ErrorCode.PARAM, error);
+				data.put("user", jsonData);
+				return data;
+			}
+			// Found user in DB
+			JSONObject data = new JSONObject();
+			data.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+			user.put("isRegister", true);
+			data.put("user", user);
+			SimpleDateFormat sdfDate = new SimpleDateFormat(DATE_FORMAT);
+			user.put("lastLogin", sdfDate.format(new Date()));
+			// add user to online list if login successed
+  		addUser(user.getString("username"), user);
+			return data;
+		} catch (Exception exception) {
+			Util.log("UserManager verifyUser JSONObject Error:" + exception.toString());
+		}
+		Util.log("UserManager Cant verifyUser");
+		return null;
+	}
+	
 	// verify user when register
 	public static JSONObject verifyUser(String username, String password, Session session, ISFSApi sfsApi) {
 		try {
@@ -199,6 +277,17 @@ public class UserManager {
 		try {
 			int newVal = Math.max(0 ,userData.getInt("cash") + updateVal);
 			userData.put("cash", newVal);
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
+	}
+	
+	public static void updatePlayerCashAndKill(String username, int addCash, int addKill) {
+		try {
+			JSONObject userData = getOnlineUser(username);
+			int newVal = Math.max(0 ,userData.getInt("cash") + addCash);
+			userData.put("cash", newVal);
+			userData.put("bossKill", userData.getInt("bossKill") + addKill);
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
 		}
@@ -376,7 +465,7 @@ public class UserManager {
 		return onlineUsers.size();
 	}
 	
-	public static int registerUser(String username, JSONObject user) {
+	public static int registerUser(String username, JSONObject user, boolean isFBRegister) {
 		int errorCode = ErrorCode.User.NULL;
 		// add default data to new user
 		try {
@@ -397,32 +486,48 @@ public class UserManager {
 	    if (connection == null) {
 	  		errorCode = ErrorCode.User.UNKNOWN;
 	    } else {
-	  		selectStatement = connection.prepareStatement("SELECT username FROM user WHERE username=?");
-	  		selectStatement.setString(1, username);
-	      // Execute query
-		    selectResultSet = selectStatement.executeQuery();
-				// Verify that one record was found
-				if (!selectResultSet.first()) {
+	    	if (!isFBRegister) {
+		  		selectStatement = connection.prepareStatement("SELECT username FROM user WHERE username=?");
+		  		selectStatement.setString(1, username);
+		      // Execute query
+			    selectResultSet = selectStatement.executeQuery();
+					// Verify that no record was found
+			    if (!selectResultSet.first()) {
+						// Create user and save to db
+			  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash) VALUES (?, ?, ?, ?)");
+			  		insertStatement.setString(1, username);
+				    insertStatement.setString(2, user.getString("password"));
+				    insertStatement.setString(3, user.getString("displayName"));
+				    insertStatement.setInt(4, user.getInt("cash"));
+			      // Execute query
+				    insertStatement.executeUpdate();
+					} else {
+						// User exist - throw exception
+			  		errorCode = ErrorCode.User.USER_EXIST;
+					}
+	    	} else {
+	    		Util.log("UserManager registerUser using Facebook " + username);
+	    		// Is Facebook register
 					// Create user and save to db
-		  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash) VALUES (?, ?, ?, ?)");
+		  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash, email, avatar, facebookId) VALUES (?, ?, ?, ?, ?, ?, ?)");
 		  		insertStatement.setString(1, username);
 			    insertStatement.setString(2, user.getString("password"));
 			    insertStatement.setString(3, user.getString("displayName"));
 			    insertStatement.setInt(4, user.getInt("cash"));
+			    insertStatement.setString(5, user.getString("email"));
+			    insertStatement.setString(6, user.getString("avatar"));
+			    insertStatement.setString(7, username);
 		      // Execute query
 			    insertStatement.executeUpdate();
-		  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
-		  		selectStatement.setString(1, username);
-		      // Execute query
-			    selectResultSet = selectStatement.executeQuery();
-					if (selectResultSet.first()) {
-				    createUserJSONData(user, selectResultSet);
-			    }
-
-				} else {
-					// User exist - throw exception
-		  		errorCode = ErrorCode.User.USER_EXIST;
-				}
+	    	}
+	  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
+	  		selectStatement.setString(1, username);
+	      // Execute query
+		    selectResultSet = selectStatement.executeQuery();
+				if (selectResultSet.first()) {
+			    createUserJSONData(user, selectResultSet);
+		    }
+				
 	    }
     }
     // Username was not found

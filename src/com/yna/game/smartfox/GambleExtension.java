@@ -56,6 +56,7 @@ public class GambleExtension extends SFSExtension {
 		addEventHandler(SFSEventType.USER_LEAVE_ROOM, GambleEventHandler.class);
 		addEventHandler(SFSEventType.PUBLIC_MESSAGE, GambleEventHandler.class);
 		addEventHandler(SFSEventType.BUDDY_LIST_INIT, GambleEventHandler.class);
+		addEventHandler(SFSEventType.USER_LOGOUT, GambleEventHandler.class);
 	}
 
 	public void destroy() {
@@ -65,6 +66,7 @@ public class GambleExtension extends SFSExtension {
 		removeEventHandler(SFSEventType.USER_LEAVE_ROOM);
 		removeEventHandler(SFSEventType.PUBLIC_MESSAGE);
 		removeEventHandler(SFSEventType.BUDDY_LIST_INIT);
+		removeEventHandler(SFSEventType.USER_LOGOUT);
 
 		removeRequestHandler(GameId.TLMB);
 		removeRequestHandler(GameId.USER);

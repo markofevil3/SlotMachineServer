@@ -11,6 +11,7 @@ import com.smartfoxserver.v2.api.ISFSBuddyApi;
 import com.smartfoxserver.v2.buddylist.BuddyVariable;
 import com.smartfoxserver.v2.buddylist.SFSBuddyVariable;
 import com.smartfoxserver.v2.core.ISFSEvent;
+import com.smartfoxserver.v2.core.SFSConstants;
 import com.smartfoxserver.v2.core.SFSEventParam;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
@@ -47,11 +48,11 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			int errorCode = 0;
 			try {
 				jsonData = new JSONObject(Util.StringFromByteArray(sfsObj.getByteArray("jsonData")));
-				if (jsonData.getBoolean("isRegister")) {
+				if (jsonData.has("isRegister") && jsonData.getBoolean("isRegister")) {
 					Boolean isGuest = jsonData.getBoolean("isGuest");
 					trace("GambleEventHandler : USER_REGISTER " + username + " " + password + " guest:" + isGuest + "#");
 					// Register new user
-					errorCode = UserManager.registerUser(username, jsonData);
+					errorCode = UserManager.registerUser(username, jsonData, false);
 					if (errorCode != ErrorCode.User.NULL) {
 						JSONObject error = new JSONObject();
 						error.put(ErrorCode.PARAM, errorCode);
@@ -59,6 +60,19 @@ public class GambleEventHandler extends BaseServerEventHandler {
 						throw new SFSLoginException("REGISTER ERROR: " + errorCode); 
 					} else {
 						outData.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+					}
+				} else if (jsonData.has("isFBLogin") && jsonData.getBoolean("isFBLogin")) {
+					trace("GambleEventHandler : USER_REGISTER FACEBOOK" + username);
+
+					JSONObject data = UserManager.verifyFBUser(username, jsonData, (Session)event.getParameter(SFSEventParam.SESSION), getApi());
+					errorCode = data.getInt(ErrorCode.PARAM);
+					if (errorCode == ErrorCode.User.NULL) {
+						outData.putByteArray("jsonData", Util.StringToBytesArray(data.getJSONObject("user").toString()));
+					} else {
+						JSONObject error = new JSONObject();
+						error.put(ErrorCode.PARAM, errorCode);
+						outData.putByteArray("jsonData", Util.StringToBytesArray(error.toString()));
+						throw new SFSLoginException("LOGIN ERROR: " + errorCode); 
 					}
 				} else {
 					trace("GambleEventHandler : USER_LOGIN " + username + " " + password);
@@ -92,6 +106,11 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		case USER_DISCONNECT:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
+			UserManager.saveUserToDB(user.getName());
+			break;
+		case USER_LOGOUT:
+			user = (User)event.getParameter(SFSEventParam.USER);
+			trace("------handleServerEvent - USER_LOGOUT: " + user.getName());
 			UserManager.saveUserToDB(user.getName());
 			break;
 		case PUBLIC_MESSAGE:
