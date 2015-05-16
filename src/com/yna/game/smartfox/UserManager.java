@@ -49,7 +49,7 @@ public class UserManager {
 	
 	public static JSONObject verifyFBUser(String fbID, JSONObject jsonData, Session session, ISFSApi sfsApi) {
 		try {
-			// find user in cache
+			// find user in database
 			JSONObject user = null;
 			if (user == null) {
 				IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
@@ -100,13 +100,32 @@ public class UserManager {
 				}
 			}
 			// create new user using FB ID
-			if (user == null) {
+			String guestId = jsonData.getString("guestId");
+			if (user == null && (guestId == null || guestId.isEmpty())) {
 				JSONObject data = new JSONObject();
 				int error = registerUser(fbID, jsonData, true);
 				jsonData.put("isRegister", true);
 				data.put(ErrorCode.PARAM, error);
 				data.put("user", jsonData);
 				return data;
+			} else if (user == null && !guestId.isEmpty()) {
+				JSONObject guest = getUser(guestId);
+				if (guest == null) {
+					JSONObject data = new JSONObject();
+					int error = registerUser(fbID, jsonData, true);
+					jsonData.put("isRegister", true);
+					data.put(ErrorCode.PARAM, error);
+					data.put("user", jsonData);
+					return data;
+				} else {
+					if (guest.getString("facebookId").isEmpty()) {
+						user = guest;
+						user.put("facebookId", fbID);
+						user.put("displayName", jsonData.getString("displayName"));
+						user.put("email", jsonData.getString("email"));
+						user.put("avatar", jsonData.getString("avatar"));
+					}
+				}
 			}
 			// Found user in DB
 			JSONObject data = new JSONObject();
@@ -403,6 +422,7 @@ public class UserManager {
 	// Remove user from cache list
 	public static void removeUser(String username) {
 		onlineUsers.remove(username);
+		Util.log("-----------Online Users: " + countOnlineUSer());
 	}
 
 	// Get multiple users by list usernames (online and offline)
@@ -558,6 +578,7 @@ public class UserManager {
 		// add user to online list if register successed
     if (errorCode == ErrorCode.User.NULL) {
   		addUser(username, user);
+  		saveUserToDB(username);
     }
 		return errorCode;
 	}

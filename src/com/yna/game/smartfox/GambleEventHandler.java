@@ -68,6 +68,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 					errorCode = data.getInt(ErrorCode.PARAM);
 					if (errorCode == ErrorCode.User.NULL) {
 						outData.putByteArray("jsonData", Util.StringToBytesArray(data.getJSONObject("user").toString()));
+						outData.putUtfString(SFSConstants.NEW_LOGIN_NAME, data.getJSONObject("user").getString("username"));
 					} else {
 						JSONObject error = new JSONObject();
 						error.put(ErrorCode.PARAM, errorCode);
@@ -107,11 +108,13 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
 			UserManager.saveUserToDB(user.getName());
+			UserManager.removeUser(user.getName());
 			break;
 		case USER_LOGOUT:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_LOGOUT: " + user.getName());
 			UserManager.saveUserToDB(user.getName());
+			UserManager.removeUser(user.getName());
 			break;
 		case PUBLIC_MESSAGE:
 			user = (User)event.getParameter(SFSEventParam.USER);
