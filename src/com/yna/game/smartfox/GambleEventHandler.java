@@ -158,8 +158,13 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
 			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
 			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("facebookId", jsonData.getString("facebookId")));
+			vars.add( new SFSBuddyVariable("avatar", jsonData.getString("avatar")));
+			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
 			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
 			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
+			vars.add( new SFSBuddyVariable("$facebookId", jsonData.getString("facebookId")));
+			vars.add( new SFSBuddyVariable("$avatar", jsonData.getString("avatar")));
 			buddyApi.setBuddyVariables(player, vars, false, false);
 			
 		} catch (Exception exception) {
