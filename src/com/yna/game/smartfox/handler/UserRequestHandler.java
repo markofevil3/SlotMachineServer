@@ -62,6 +62,9 @@ public class UserRequestHandler extends ClientRequestHandler {
 		case Command.ADD_FRIEND:
 			handleAddFriendCommand(player, jsonData, out);
 			break;
+		case Command.ADD_FB_FRIEND:
+			handleAddFbFriendCommand(player, jsonData, out);
+			break;
 		case Command.INVITE_TO_GAME:
 			handleCommandInviteToGame(player, jsonData, out);
 			break;
@@ -104,6 +107,19 @@ public class UserRequestHandler extends ClientRequestHandler {
 			buddyApi.addBuddy(player, jsonData.getString("fUsername"), false, true, false);
 			out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
 			out.put("fUsername", jsonData.getString("fUsername"));
+		} catch (Exception exception) {
+			trace("handleAddFriendCommand:JSONObject Exception:" + exception.toString());
+		}
+	}
+	
+	private void handleAddFbFriendCommand(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			JSONArray usernameArr = UserManager.GetUsernamesByFbIds(jsonData.getJSONArray("fbIds"));
+			ISFSBuddyApi buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+			for (int i = 0; i < usernameArr.length(); i++) {
+				buddyApi.addBuddy(player, usernameArr.getString(i), false, true, false);
+			}
+			out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
 		} catch (Exception exception) {
 			trace("handleAddFriendCommand:JSONObject Exception:" + exception.toString());
 		}

@@ -1,7 +1,9 @@
 package com.yna.game.smartfox;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -9,13 +11,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.smartfoxserver.bitswarm.sessions.Session;
+import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.api.ISFSApi;
+import com.smartfoxserver.v2.api.ISFSBuddyApi;
+import com.smartfoxserver.v2.buddylist.BuddyVariable;
+import com.smartfoxserver.v2.buddylist.SFSBuddyVariable;
 import com.smartfoxserver.v2.db.IDBManager;
+import com.smartfoxserver.v2.entities.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+
 
 
 
@@ -37,6 +46,8 @@ public class UserManager {
 //	private static final int NEW_USER_CASH = 100000;
 //	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+	private static ISFSBuddyApi buddyApi;
+
 //	private static final int LEADERBOARD_NUMB_USERS = 20;
 //	private static final int DAILY_REWARD_MINS = 5;
 //	private static final int DAILY_REWARD_CASH = 50000;
@@ -307,6 +318,8 @@ public class UserManager {
 			int newVal = Math.max(0 ,userData.getInt("cash") + addCash);
 			userData.put("cash", newVal);
 			userData.put("bossKill", userData.getInt("bossKill") + addKill);
+			// TEST CODE - update buddy variable when player killed a boss
+			setBuddyVariables(SmartFoxServer.getInstance().getUserManager().getUserByName(userData.getString("username")), userData, false);
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
 		}
@@ -338,6 +351,7 @@ public class UserManager {
 			} else {
 				out.put(ErrorCode.PARAM, ErrorCode.User.CANT_CLAIM_DAILY_YET);
 			}
+			
 			return out;
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
@@ -451,33 +465,95 @@ public class UserManager {
 //		return friends;
 //	}
 	
-	public static void addFriend(String username, String fUsername, JSONObject out) throws JSONException {
-		JSONObject user = getOnlineUser(username);
-		if (user != null) {
-			JSONArray friends = user.getJSONArray("friends");
+//	public static void addFriend(String username, String fUsername, JSONObject out) throws JSONException {
+//		JSONObject user = getOnlineUser(username);
+//		if (user != null) {
+//			JSONArray friends = user.getJSONArray("friends");
+//
+//			int friendNumb = friends.length();
+//			if (friendNumb == 0) {
+//				friends.put(fUsername);
+//				out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+//				out.put("fUsername", fUsername);
+//			} else {
+//				boolean isFriend = false;
+//				for (int i = 0; i < friendNumb; i++) {
+//					if (friends.getString(i).equals(fUsername)) {
+//						isFriend = true;
+//					}
+//				}
+//				if (!isFriend) {
+//					friends.put(fUsername);
+//					out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+//					out.put("fUsername", fUsername);
+//				} else {
+//					out.put(ErrorCode.PARAM, ErrorCode.User.ALREADY_FRIEND);
+//				}
+//			}
+//		} else {
+//			out.put(ErrorCode.PARAM, ErrorCode.User.CANT_FIND_USER);
+//		}
+//	}
+	
+	public static JSONArray GetUsernamesByFbIds(JSONArray facebookIds) throws JSONException {
+		
+		Util.log("GetUsernamesByFbIds " + facebookIds.toString());
+		if (facebookIds.length() <= 0) {
+			return null;
+		}
+		
+		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
+		Connection connection = null;
+		PreparedStatement selectStatement = null;
+		ResultSet selectResultSet = null;
+    try {
+	  	// Grab a connection from the DBManager connection pool
+	    connection = dbManager.getConnection();
+	    // Throw error - cant get any connection
+	    if (connection == null) {
+				return null;
+	    } else {
+	    	String statement = "SELECT username FROM user WHERE facebookId IN (";
+	    	for (int i = 0; i < facebookIds.length(); i++) {
+	    		if (i == facebookIds.length() - 1) {
+		    		statement += "?)";
+	    		} else {
+		    		statement += "?,";
+	    		}
+	    	}
+	  		selectStatement = connection.prepareStatement(statement);
+	    	for (int i = 0; i < facebookIds.length(); i++) {
+	    		selectStatement.setString(i + 1, facebookIds.getString(i));
+	    	}
+	      // Execute query
+		    selectResultSet = selectStatement.executeQuery();
+		    JSONArray usernameArr = new JSONArray();
+		    while (selectResultSet.next()) {
+		    	usernameArr.put(selectResultSet.getString("username"));
+		    }
+		    return usernameArr;
+	    }
+    }
+    // Username was not found
+    catch (SQLException e) {
+  		Util.log("UserManager verifyUser SQLException | JSONException: " + e.toString());
+			return null;
+    }
 
-			int friendNumb = friends.length();
-			if (friendNumb == 0) {
-				friends.put(fUsername);
-				out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
-				out.put("fUsername", fUsername);
-			} else {
-				boolean isFriend = false;
-				for (int i = 0; i < friendNumb; i++) {
-					if (friends.getString(i).equals(fUsername)) {
-						isFriend = true;
-					}
+		finally
+		{
+			// Return connection to the DBManager connection pool
+			try {
+				connection.close();
+				if (selectStatement != null) {
+					selectStatement.close();
 				}
-				if (!isFriend) {
-					friends.put(fUsername);
-					out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
-					out.put("fUsername", fUsername);
-				} else {
-					out.put(ErrorCode.PARAM, ErrorCode.User.ALREADY_FRIEND);
+				if (selectResultSet != null) {
+					selectResultSet.close();
 				}
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-		} else {
-			out.put(ErrorCode.PARAM, ErrorCode.User.CANT_FIND_USER);
 		}
 	}
 	
@@ -592,6 +668,7 @@ public class UserManager {
   		Util.log("UserManager saveUserToDB CANT FIND USER IN CACHE " + username);
 			return;
 		}
+		
 		try {
 			connection = dbManager.getConnection();
 			updateStatement = connection.prepareStatement("UPDATE user SET password=?, displayName=?,"
@@ -655,6 +732,34 @@ public class UserManager {
 		}
 		return user;
 	}
-	
-	// TO DO: remove user from cache when offline
+		
+	public static void setBuddyVariables(User player, JSONObject jsonData, boolean shouldInitBuddyList) {
+		try {
+			if (player == null) {
+				Util.log("setBuddyVariables:player == null");
+
+				return;
+			}
+			Util.log("setBuddyVariables:player " + player.getVariable("displayName") + " " + player.getVariable("cash").getIntValue());
+
+			if (buddyApi == null) {
+				buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+			}
+			if (shouldInitBuddyList) {
+				buddyApi.initBuddyList(player, false);
+			}
+			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
+			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
+			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("facebookId", jsonData.getString("facebookId")));
+			vars.add( new SFSBuddyVariable("avatar", jsonData.getString("avatar")));
+			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
+			vars.add( new SFSBuddyVariable("$facebookId", jsonData.getString("facebookId")));
+			vars.add( new SFSBuddyVariable("$avatar", jsonData.getString("avatar")));
+			buddyApi.setBuddyVariables(player, vars, true, false);
+		} catch (Exception exception) {
+			Util.log("setBuddyVariables:Exception:" + exception.toString());
+		}
+	}
 }

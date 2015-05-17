@@ -28,8 +28,6 @@ import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
 
 public class GambleEventHandler extends BaseServerEventHandler {
-
-	protected ISFSBuddyApi buddyApi;
 	
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
@@ -153,24 +151,34 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			variables.add(variable);
 			player.setVariables(variables);
 			
-			buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
-			buddyApi.initBuddyList(player, false);
-			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
-			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
-			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
-			vars.add( new SFSBuddyVariable("facebookId", jsonData.getString("facebookId")));
-			vars.add( new SFSBuddyVariable("avatar", jsonData.getString("avatar")));
-			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
-			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
-			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
-			vars.add( new SFSBuddyVariable("$facebookId", jsonData.getString("facebookId")));
-			vars.add( new SFSBuddyVariable("$avatar", jsonData.getString("avatar")));
-			buddyApi.setBuddyVariables(player, vars, false, false);
+			UserManager.setBuddyVariables(player, jsonData, true);
 			
 		} catch (Exception exception) {
 			trace("setUserVariables:Exception:" + exception.toString());
 		}
 	}
+	
+//	private void setBuddyVariables(User player, JSONObject jsonData, boolean shouldInitBuddyList) {
+//		try {
+//			trace("setBuddyVariables:"+ player + " | " + jsonData.toString());
+//			buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
+//			if (shouldInitBuddyList) {
+//				buddyApi.initBuddyList(player, false);
+//			}
+//			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
+//			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
+//			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
+//			vars.add( new SFSBuddyVariable("facebookId", jsonData.getString("facebookId")));
+//			vars.add( new SFSBuddyVariable("avatar", jsonData.getString("avatar")));
+//			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
+//			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
+//			vars.add( new SFSBuddyVariable("$facebookId", jsonData.getString("facebookId")));
+//			vars.add( new SFSBuddyVariable("$avatar", jsonData.getString("avatar")));
+//			buddyApi.setBuddyVariables(player, vars, true, false);
+//		} catch (Exception exception) {
+//			trace("setUserVariables:Exception:" + exception.toString());
+//		}
+//	}
 	
 //	private void resetUserVariables(User player) {
 //		try {
