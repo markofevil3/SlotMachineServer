@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
@@ -23,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 
 
 
@@ -120,7 +122,7 @@ public class UserManager {
 				data.put("user", jsonData);
 				return data;
 			} else if (user == null && !guestId.isEmpty()) {
-				JSONObject guest = getUser(guestId);
+				JSONObject guest = getUser(guestId, false);
 				if (guest == null) {
 					JSONObject data = new JSONObject();
 					int error = registerUser(fbID, jsonData, true);
@@ -155,7 +157,7 @@ public class UserManager {
 		return null;
 	}
 	
-	// verify user when register
+	// verify user when login
 	public static JSONObject verifyUser(String username, String password, Session session, ISFSApi sfsApi) {
 		try {
 			// find user in cache
@@ -240,9 +242,9 @@ public class UserManager {
 		return onlineUsers.get(username);
 	}
 	
-	// TO DO: remove unwanted field in return data 
-	public static JSONObject getUser(String username) throws JSONException {
+	public static JSONObject getUser(String username, boolean isViewing) throws JSONException {
 		JSONObject user = onlineUsers.get(username);
+		JSONObject viewData = new JSONObject();
 		if (user == null) {
 			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 			Connection connection = null;
@@ -257,13 +259,22 @@ public class UserManager {
 		  		user.put(ErrorCode.PARAM, ErrorCode.User.UNKNOWN);
 					return user;
 		    } else {
-		  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
+		    	if (isViewing) {
+		    		// TO DO: select needed fields only
+		    		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
+		    	} else {
+			  		selectStatement = connection.prepareStatement("SELECT * FROM user WHERE username=?");
+		    	}
 		  		selectStatement.setString(1, username);
 		      // Execute query
 			    selectResultSet = selectStatement.executeQuery();
 					if (selectResultSet.first()) {
-						user = new JSONObject();
-						createUserJSONData(user, selectResultSet);
+						if (isViewing) {
+							viewData = createUserViewingJSONdata(null, selectResultSet);
+						} else {
+							user = new JSONObject();
+							createUserJSONData(user, selectResultSet);
+						}
 					}
 		    }
 	    }
@@ -289,8 +300,14 @@ public class UserManager {
 					e.printStackTrace();
 				}
 			}
+		} else {
+			viewData = createUserViewingJSONdata(user, null);
 		}
-		return user;
+		if (isViewing) {
+			return viewData;
+		} else {
+			return user;
+		}
 	}
 	
 	public static void updatePlayerCash(String username, int updateVal) {
@@ -590,11 +607,12 @@ public class UserManager {
 					// Verify that no record was found
 			    if (!selectResultSet.first()) {
 						// Create user and save to db
-			  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash) VALUES (?, ?, ?, ?)");
+			  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash, inboxMes) VALUES (?, ?, ?, ?, ?)");
 			  		insertStatement.setString(1, username);
 				    insertStatement.setString(2, user.getString("password"));
 				    insertStatement.setString(3, user.getString("displayName"));
 				    insertStatement.setInt(4, user.getInt("cash"));
+				    insertStatement.setString(5, "[]");
 			      // Execute query
 				    insertStatement.executeUpdate();
 					} else {
@@ -605,7 +623,7 @@ public class UserManager {
 	    		Util.log("UserManager registerUser using Facebook " + username);
 	    		// Is Facebook register
 					// Create user and save to db
-		  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash, email, avatar, facebookId) VALUES (?, ?, ?, ?, ?, ?, ?)");
+		  		insertStatement = connection.prepareStatement("INSERT INTO user(username, password, displayName, cash, email, avatar, facebookId, inboxMes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 		  		insertStatement.setString(1, username);
 			    insertStatement.setString(2, user.getString("password"));
 			    insertStatement.setString(3, user.getString("displayName"));
@@ -613,6 +631,7 @@ public class UserManager {
 			    insertStatement.setString(5, user.getString("email"));
 			    insertStatement.setString(6, user.getString("avatar"));
 			    insertStatement.setString(7, username);
+			    insertStatement.setString(8, "[]");
 		      // Execute query
 			    insertStatement.executeUpdate();
 	    	}
@@ -659,6 +678,53 @@ public class UserManager {
 		return errorCode;
 	}
 	
+	public static JSONArray getUserInbox(String username) {
+		try {
+			JSONObject user = getOnlineUser(username);
+			if (user != null) {
+				if (user.has("inboxMes")) {
+					return user.getJSONArray("inboxMes");
+				}
+			}
+		} catch (JSONException e) {
+  		Util.log("UserManager getUserInbox JSONException:" + e.toString());
+		}
+		return null;
+	}
+	
+	public static void addMessageToUserInbox(String username, JSONObject message) {
+		
+	}
+	
+	// add message to online user inbox
+	public static void addMessageToUserInbox(JSONObject user, JSONObject message) {
+		try {
+			if (user.has("inboxMes")) {
+				user.getJSONArray("inboxMes").put(message);
+			} else {
+				user.put("inboxMes", new JSONArray().put(message));
+			}
+		} catch (JSONException e) {
+  		Util.log("UserManager addMessageToUserInbox JSONException:" + e.toString());
+		}
+	}
+	
+	// add admin message to all online user 
+	public static void addAdminMessageToOnlineUsers(JSONObject message) {
+		try {
+			JSONObject jsonData;
+			for (Map.Entry<String, JSONObject> map : onlineUsers.entrySet()) {
+				jsonData = map.getValue();
+				jsonData.put("lastAdminMesTime", message.getLong("createdAt"));
+				addMessageToUserInbox(jsonData, message);
+	  		Util.log("UserManager addMessageToOnlineUsers user:" + map.getKey());
+			}
+		} catch (JSONException e) {
+  		Util.log("UserManager addMessageToOnlineUsers JSONException:" + e.toString());
+		}
+	}
+	
+	// TO DO: update inbox message and other variable
 	public static void saveUserToDB(String username) {
 		JSONObject user = getOnlineUser(username);
 		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
@@ -709,6 +775,7 @@ public class UserManager {
 		}
 	}
 	
+	// create jsonData for user to put in cache
 	public static JSONObject createUserJSONData(JSONObject user, ResultSet userResultSet) {
 		try {
 			user.put("username", userResultSet.getString("username"));
@@ -725,6 +792,20 @@ public class UserManager {
 			user.put("totalWin", userResultSet.getInt("totalWin"));
 			user.put("biggestWin", userResultSet.getInt("biggestWin"));
 			user.put("lastDaily", userResultSet.getLong("lastClaimedDaily"));
+			String inboxRaw = userResultSet.getString("inboxMes");
+			user.put("inboxMes", inboxRaw.isEmpty() ? new JSONArray() : new JSONArray(inboxRaw));
+			user.put("lastInboxTime", userResultSet.getLong("lastInboxTime"));
+			user.put("lastReadInboxTime", userResultSet.getLong("lastReadInboxTime"));
+			user.put("lastAdminMesTime", userResultSet.getLong("lastAdminMesTime"));
+			
+			// TO DO: check if any admin message need to add
+			JSONArray adminMessages = AdminMessageManager.getNeedToAddMessages(user.getLong("lastAdminMesTime"));
+			int length = adminMessages.length();
+			if (length > 0) {
+				for (int i = 0; i < length; i++) {
+					addMessageToUserInbox(user, adminMessages.getJSONObject(i));
+				}
+			}
 		} catch (JSONException e) {
   		Util.log("UserManager createUserJSONData JSONException: " + e.toString());
 		} catch (SQLException e) {
@@ -732,7 +813,46 @@ public class UserManager {
 		}
 		return user;
 	}
-		
+	
+	// create jsonData for user to view profile only
+	public static JSONObject createUserViewingJSONdata(JSONObject user, ResultSet userResultSet) {
+		JSONObject viewData = new JSONObject();
+		try {
+			if (user == null) {
+				viewData.put("username", userResultSet.getString("username"));
+				viewData.put("displayName", userResultSet.getString("displayName"));
+				viewData.put("email", userResultSet.getString("email"));
+				viewData.put("avatar", userResultSet.getString("avatar"));
+				viewData.put("cash", userResultSet.getInt("cash"));
+				viewData.put("gem", userResultSet.getInt("gem"));
+				viewData.put("createdAt", userResultSet.getTimestamp("createdAt").toString());
+				viewData.put("lastLogin", userResultSet.getTimestamp("lastLogin").toString());
+				viewData.put("facebookId", userResultSet.getString("facebookId"));
+				viewData.put("bossKill", userResultSet.getInt("bossKill"));
+				viewData.put("totalWin", userResultSet.getInt("totalWin"));
+				viewData.put("biggestWin", userResultSet.getInt("biggestWin"));
+			} else {
+				viewData.put("username", user.getString("username"));
+				viewData.put("displayName", user.getString("displayName"));
+				viewData.put("email", user.getString("email"));
+				viewData.put("avatar", user.getString("avatar"));
+				viewData.put("cash", user.getInt("cash"));
+				viewData.put("gem", user.getInt("gem"));
+				viewData.put("createdAt", user.getString("createdAt"));
+				viewData.put("lastLogin", user.getString("lastLogin"));
+				viewData.put("facebookId", user.getString("facebookId"));
+				viewData.put("bossKill", user.getInt("bossKill"));
+				viewData.put("totalWin", user.getInt("totalWin"));
+				viewData.put("biggestWin", user.getInt("biggestWin"));
+			}
+		} catch (JSONException e) {
+  		Util.log("UserManager createUserViewingJSONdata JSONException: " + e.toString());
+		} catch (SQLException e) {
+  		Util.log("UserManager createUserViewingJSONdata SQLException: " + e.toString());
+		}
+		return viewData;
+	}
+	
 	public static void setBuddyVariables(User player, JSONObject jsonData, boolean shouldInitBuddyList) {
 		try {
 			if (player == null) {

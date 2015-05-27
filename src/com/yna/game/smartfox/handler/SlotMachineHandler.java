@@ -216,11 +216,13 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			int[] randomItems = SlotCombinations.GenerateRandomItems(isFreeSpin, gameType);
 			if (freeSpin > 0) {
 				freeSpin -= 1;
-				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
+				// TEST CODE -- commented because unused??
+//				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
 			out = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType, out);
 			freeSpin += out.getInt("frCount");
-			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
+			// TEST CODE -- commented because unused??
+//			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			JSONArray winningGold = out.getJSONArray("wGold");
 			int totalWin = 0; 
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));

@@ -19,6 +19,7 @@ public class Command {
 	public static final String LOAD_LEADERBOARD = "loadLeaderboard";
 	public static final String LOAD_FRIEND_LIST = "loadFriendList";
 	public static final String LOAD_USER_INFO = "loadUserInfo";
+	public static final String LOAD_INBOX = "loadInbox";
 	public static final String ADD_FRIEND = "addFriend";
 	public static final String ADD_FB_FRIEND = "addFbFriend";
 	public static final String INVITE_TO_GAME = "inviteToGame";

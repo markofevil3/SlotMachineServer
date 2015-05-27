@@ -59,21 +59,6 @@ public class GambleExtension extends SFSExtension {
 		addEventHandler(SFSEventType.USER_LOGOUT, GambleEventHandler.class);
 	}
 
-	public void destroy() {
-		removeEventHandler(SFSEventType.USER_LOGIN);
-		removeEventHandler(SFSEventType.USER_JOIN_ZONE);
-		removeEventHandler(SFSEventType.USER_DISCONNECT);
-		removeEventHandler(SFSEventType.USER_LEAVE_ROOM);
-		removeEventHandler(SFSEventType.PUBLIC_MESSAGE);
-		removeEventHandler(SFSEventType.BUDDY_LIST_INIT);
-		removeEventHandler(SFSEventType.USER_LOGOUT);
-
-		removeRequestHandler(GameId.TLMB);
-		removeRequestHandler(GameId.USER);
-		removeRequestHandler(GameId.SLOT_MACHINE);
-		TienLenManager.destroy();
-	}
-	
 	private void createLobbyRooms() {
 		Zone zone = getParentZone();
 //		private static final String FRUIT_LOBBY_ROOM = "fruitLobby";
@@ -179,4 +164,23 @@ public class GambleExtension extends SFSExtension {
 	
 	// TO DO: save jackpot to database interval
 	// TO DO: when 1 user got jackpot, save to jackpots table, create new jackpot
+	
+	// TO DO: clean up, save data before stop server
+	@Override
+	public void destroy() {
+		super.destroy();
+		removeEventHandler(SFSEventType.USER_LOGIN);
+		removeEventHandler(SFSEventType.USER_JOIN_ZONE);
+		removeEventHandler(SFSEventType.USER_DISCONNECT);
+		removeEventHandler(SFSEventType.USER_LEAVE_ROOM);
+		removeEventHandler(SFSEventType.PUBLIC_MESSAGE);
+		removeEventHandler(SFSEventType.BUDDY_LIST_INIT);
+		removeEventHandler(SFSEventType.USER_LOGOUT);
+
+		removeRequestHandler(GameId.TLMB);
+		removeRequestHandler(GameId.USER);
+		removeRequestHandler(GameId.SLOT_MACHINE);
+		TienLenManager.destroy();
+		AdminMessageManager.destroy();
+	}
 }

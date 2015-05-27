@@ -59,6 +59,9 @@ public class UserRequestHandler extends ClientRequestHandler {
 		case Command.LOAD_USER_INFO:
 			handleLoadUserInfoCommand(player, jsonData, out);
 			break;
+		case Command.LOAD_INBOX:
+			handleLoadInbox(player, jsonData, out);
+			break;
 		case Command.ADD_FRIEND:
 			handleAddFriendCommand(player, jsonData, out);
 			break;
@@ -92,9 +95,18 @@ public class UserRequestHandler extends ClientRequestHandler {
 		}
 	}
 		
+	private void handleLoadInbox(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			// TO DO: load user inbox messages
+			out.put("inbox", UserManager.getUserInbox(jsonData.getString("username")));
+		} catch (Exception exception) {
+			trace("handleLoadInbox:JSONObject Exception:" + exception.toString());
+		}
+	}
+	
 	private void handleLoadUserInfoCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			out.put("user", UserManager.getUser(jsonData.getString("username")));
+			out.put("user", UserManager.getUser(jsonData.getString("username"), true));
 		} catch (Exception exception) {
 			trace("handleLoadUserInfoCommand:JSONObject Exception:" + exception.toString());
 		}

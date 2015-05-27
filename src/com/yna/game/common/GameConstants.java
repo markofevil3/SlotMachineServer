@@ -6,8 +6,7 @@ import java.io.IOException;
 
 public class GameConstants {
 	
-	public static final String DATA_FILE_PATH = "/data/GameConstants.txt";
-	public static String test2 = "";
+	public static final String GAMECONSTANTS_FILE_PATH = "/data/GameConstants.txt";
 	public static int NEW_USER_CASH = 100000;
 	public static int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	public static int LEADERBOARD_NUMB_USERS = 20;
@@ -15,18 +14,14 @@ public class GameConstants {
 	public static int DAILY_REWARD_CASH = 50000;
 	public static int INVITE_MESSAGE_EXPIRED_SECONDS = 50;
 
-	public static void Init() {
+	public static void init() {
 		try {
-			BufferedReader bufferedReader = new BufferedReader(
-			new FileReader(System.getProperty("user.dir") + DATA_FILE_PATH));
+			BufferedReader bufferedReader = new BufferedReader(new FileReader(System.getProperty("user.dir") + GAMECONSTANTS_FILE_PATH));
 			String line = bufferedReader.readLine();
 			while (line != null) {
 				String[] arr = line.split("=");
 				if (arr.length >= 2) {
 					switch(arr[0].trim()) {
-						case "test":
-							test2 = arr[1].trim();
-							break;
 						case "NEW_USER_CASH":
 							NEW_USER_CASH = Integer.parseInt(arr[1].trim());
 							break;

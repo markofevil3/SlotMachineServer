@@ -154,6 +154,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			UserManager.setBuddyVariables(player, jsonData, true);
 			
 		} catch (Exception exception) {
+			// TO DO: force reload game
 			trace("setUserVariables:Exception:" + exception.toString());
 		}
 	}
