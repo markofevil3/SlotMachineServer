@@ -1,0 +1,1 @@
+[{"id":0,"message":{"type":0,"title":"Gift from Admin","message": "Thank you for your support. This is some rewards.","goldVal":20000,"gemVal":10,"fromUsername":"","createdAt":1432480339500},"createdAt":1432480339500,"expiredAt":1432480339500,"targetType":1,"usernames":"10202684447992635"}]

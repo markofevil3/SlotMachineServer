@@ -41,6 +41,7 @@ import java.sql.SQLException;
 
 
 
+
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
@@ -70,6 +71,7 @@ public class UserManager {
 		Util.log("onlineUsers Count: " + onlineUsers.size());
 	}
 	
+	// TO DO: should check online first???
 	public static JSONObject verifyFBUser(String fbID, JSONObject jsonData, Session session, ISFSApi sfsApi) {
 		try {
 			// find user in database
@@ -800,7 +802,7 @@ public class UserManager {
 		try {
 			long mesCreatedAt = message.getLong("createdAt");
 			long currentInboxTime = user.getLong("lastInboxTime");
-			if (user.has("inboxMes")) {
+			if (user.has("inboxMes") && user.getJSONArray("inboxMes") != null) {
 				user.getJSONArray("inboxMes").put(message);
 				if (currentInboxTime < mesCreatedAt) {
 					user.put("lastInboxTime", mesCreatedAt);
@@ -809,11 +811,14 @@ public class UserManager {
 			} else {
 				user.put("inboxMes", new JSONArray().put(message));
 			}
-			ISFSObject params = new SFSObject();
-			JSONObject jsonData = new JSONObject();
-			jsonData.put("lastInboxTime", currentInboxTime);
-			params.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
-			sfsApi.sendExtensionResponse(Command.PUSH_USER_NOTICES, params, sfsApi.getUserByName(user.getString("username")), null, false);
+  		User userToPushNotice = sfsApi.getUserByName(user.getString("username"));
+  		if (userToPushNotice != null) {
+  			ISFSObject params = new SFSObject();
+  			JSONObject jsonData = new JSONObject();
+  			jsonData.put("lastInboxTime", currentInboxTime);
+  			params.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+  			sfsApi.sendExtensionResponse(Command.PUSH_USER_NOTICES, params, sfsApi.getUserByName(user.getString("username")), null, false);
+  		}
 		} catch (JSONException e) {
   		Util.log("UserManager addMessageToUserInbox JSONException:" + e.toString());
 		}
@@ -910,16 +915,15 @@ public class UserManager {
 			user.put("biggestWin", userResultSet.getInt("biggestWin"));
 			user.put("lastDaily", userResultSet.getLong("lastClaimedDaily"));
 			String inboxRaw = userResultSet.getString("inboxMes");
-			user.put("inboxMes", inboxRaw.isEmpty() ? new JSONArray() : new JSONArray(inboxRaw));
+			user.put("inboxMes", (inboxRaw.isEmpty() || inboxRaw == "[]") ? new JSONArray() : new JSONArray(inboxRaw));
 			user.put("lastInboxTime", userResultSet.getLong("lastInboxTime"));
 			user.put("lastReadInboxTime", userResultSet.getLong("lastReadInboxTime"));
 			user.put("lastAdminMesTime", userResultSet.getLong("lastAdminMesTime"));
-			
-			JSONArray adminMessages = AdminMessageManager.getNeedToAddMessages(user.getLong("lastAdminMesTime"));
-			int length = adminMessages.length();
+  		List<AdminMessage> adminMessages = AdminMessageManager.getNeedToAddMessages(user.getLong("lastAdminMesTime"));
+			int length = adminMessages.size();
 			if (length > 0) {
 				for (int i = 0; i < length; i++) {
-					AdminMessage adminMes = (AdminMessage)adminMessages.get(i);
+					AdminMessage adminMes = adminMessages.get(i);
 					addMessageToUserInbox(user, adminMes.message);
 					if (user.getLong("lastAdminMesTime") < adminMes.createdAt) {
 						user.put("lastAdminMesTime", adminMes.createdAt);
