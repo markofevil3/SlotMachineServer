@@ -21,7 +21,7 @@ import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
 import com.yna.game.smartfox.ClientRequestHandler;
 import com.yna.game.smartfox.UserManager;
-import com.yna.game.tienlen.models.Command;
+import com.yna.game.slotmachine.models.Command;
 
 @MultiHandler
 public class UserRequestHandler extends ClientRequestHandler {
@@ -74,12 +74,23 @@ public class UserRequestHandler extends ClientRequestHandler {
 		case Command.CLAIM_DAILY:
 			handleCommandClaimDaily(player, jsonData, out);
 			break;
+		case Command.CLAIM_INBOX_REWARD:
+			handleCommandClaimInboxReward(player, jsonData, out);
+			break;
 		}
 	}
 	
 	private void handleCommandClaimDaily(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			out = UserManager.claimDailyReward(jsonData.getString("username"), out);
+		} catch (Exception exception) {
+			trace("handleCommandClaimDaily:JSONObject Exception:" + exception.toString());
+		}
+	}	
+	
+	private void handleCommandClaimInboxReward(User player, JSONObject jsonData, JSONObject out) {
+		try {
+			out = UserManager.claimInboxReward(jsonData.getString("username"), jsonData.getInt("type"), jsonData.getLong("createdAt"), jsonData.getString("fromUsername"), out);
 		} catch (Exception exception) {
 			trace("handleCommandClaimDaily:JSONObject Exception:" + exception.toString());
 		}

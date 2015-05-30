@@ -2,6 +2,8 @@ package com.yna.game.smartfox;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,9 +28,12 @@ import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
 import com.smartfoxserver.bitswarm.sessions.Session;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
+import com.yna.game.task.TaskManager;
 
 public class GambleEventHandler extends BaseServerEventHandler {
 	
+	ScheduledFuture<?> taskManager;
+
 	@Override
 	public void handleServerEvent(ISFSEvent event) throws SFSException {
 		JSONObject jsonData;
@@ -38,6 +43,15 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		}
 		
 		switch (event.getType()) {
+		case SERVER_READY:
+			UserManager.init();
+			TaskManager.Init();
+
+			trace("TaskManager Init");
+			SmartFoxServer sfs = SmartFoxServer.getInstance();
+//			sfs.getEventManager().setThreadPoolSize(20);
+			taskManager = sfs.getTaskScheduler().scheduleAtFixedRate(new TaskManager(), 0, 1, TimeUnit.SECONDS);
+			break;
 		case USER_LOGIN:
 			String username = (String) event.getParameter(SFSEventParam.LOGIN_NAME);
 			String password = (String) event.getParameter(SFSEventParam.LOGIN_PASSWORD);

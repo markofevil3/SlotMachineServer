@@ -26,7 +26,6 @@ import com.yna.game.task.TaskManager;
 import com.yna.game.tienlen.models.TienLenManager;
 
 public class GambleExtension extends SFSExtension {
-	ScheduledFuture<?> taskManager;
 	
 	private int LOBBY_MAX_USERS = 3000;
 	private String LOBBY_GROUP_ID = "lobby";
@@ -35,13 +34,6 @@ public class GambleExtension extends SFSExtension {
 	public void init() {
 		TienLenManager.init(this);
 		SlotCombinations.Init();
-		TaskManager.Init();
-
-		trace("GambleExtension Init");
-		SmartFoxServer sfs = SmartFoxServer.getInstance();
-//		sfs.getEventManager().setThreadPoolSize(20);
-		taskManager = sfs.getTaskScheduler().scheduleAtFixedRate(new TaskManager(), 0, 1, TimeUnit.SECONDS);
-		
 		createLobbyRooms();
 		
 		UserRequestHandler.init();
@@ -57,6 +49,7 @@ public class GambleExtension extends SFSExtension {
 		addEventHandler(SFSEventType.PUBLIC_MESSAGE, GambleEventHandler.class);
 		addEventHandler(SFSEventType.BUDDY_LIST_INIT, GambleEventHandler.class);
 		addEventHandler(SFSEventType.USER_LOGOUT, GambleEventHandler.class);
+		addEventHandler(SFSEventType.SERVER_READY, GambleEventHandler.class);
 	}
 
 	private void createLobbyRooms() {

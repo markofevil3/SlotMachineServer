@@ -12,6 +12,7 @@ public class ErrorCode {
 		public static final int CANT_FIND_USER = 5;
 		public static final int ALREADY_FRIEND = 6;
 		public static final int CANT_CLAIM_DAILY_YET = 7;
+		public static final int CANT_FIND_MESSAGE = 8;
 		public static final int UNKNOWN = 100;
 	}
 	

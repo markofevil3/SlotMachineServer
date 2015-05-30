@@ -19,6 +19,8 @@ import com.smartfoxserver.v2.buddylist.BuddyVariable;
 import com.smartfoxserver.v2.buddylist.SFSBuddyVariable;
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.entities.User;
+import com.smartfoxserver.v2.entities.data.ISFSObject;
+import com.smartfoxserver.v2.entities.data.SFSObject;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -36,9 +38,13 @@ import java.sql.SQLException;
 
 
 
+
+
+
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
+import com.yna.game.slotmachine.models.Command;
 
 public class UserManager {
 	
@@ -49,10 +55,14 @@ public class UserManager {
 //	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 	private static ISFSBuddyApi buddyApi;
-
+	private static ISFSApi sfsApi;
 //	private static final int LEADERBOARD_NUMB_USERS = 20;
 //	private static final int DAILY_REWARD_MINS = 5;
 //	private static final int DAILY_REWARD_CASH = 50000;
+	
+	public static void init() {
+		sfsApi = SmartFoxServer.getInstance().getAPIManager().getSFSApi();
+	}
 	
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
@@ -342,6 +352,15 @@ public class UserManager {
 		}
 	}
 	
+	public static void updatePlayerCashAndGem(JSONObject userData, int updateCash, int updateGem) {
+		try {
+			userData.put("cash", Math.max(0 ,userData.getInt("cash") + updateCash));
+			userData.put("gem", Math.max(0 ,userData.getInt("gem") + updateGem));
+		} catch (JSONException e) {
+			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
+	}
+	
 	public static long updateLastClaimDailyTime(String username) {
 		try {
 			JSONObject userData = getOnlineUser(username);
@@ -372,6 +391,34 @@ public class UserManager {
 			return out;
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+		}
+		return out;
+	}
+	
+	public static JSONObject claimInboxReward(String username, int mesType, long createdAt, String fromUsername, JSONObject out) {
+		try {
+			JSONObject user = getOnlineUser(username);
+			JSONArray messages = getUserInbox(user);
+			if (messages != null && messages.length() > 0) {
+				for (int i = 0; i < messages.length(); i++) {
+					JSONObject mes = messages.getJSONObject(i);
+					if (mes.getInt("type") == mesType && mes.getLong("createdAt") == createdAt && (fromUsername.isEmpty() || mes.getString("fromUsername") == fromUsername)) {
+						int goldVal = mes.getInt("goldVal");
+						int gemVal = mes.getInt("gemVal");
+						updatePlayerCashAndGem(user, goldVal, gemVal);
+						out.put("goldVal", goldVal);
+						out.put("gemVal", gemVal);
+						out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
+						messages.remove(i);
+						return out;
+					}
+				}
+				out.put(ErrorCode.PARAM, ErrorCode.User.CANT_FIND_MESSAGE);
+			} else {
+				out.put(ErrorCode.PARAM, ErrorCode.User.CANT_FIND_MESSAGE);
+			}
+		} catch (JSONException e) {
+			Util.log("UserManager claimInboxReward JSONObject Error:" + e.toString());
 		}
 		return out;
 	}
@@ -679,11 +726,21 @@ public class UserManager {
 	}
 	
 	public static JSONArray getUserInbox(String username) {
+		return getUserInbox(getOnlineUser(username));
+	}
+	
+	public static JSONArray getUserInbox(JSONObject user) {
 		try {
-			JSONObject user = getOnlineUser(username);
 			if (user != null) {
 				if (user.has("inboxMes")) {
-					return user.getJSONArray("inboxMes");
+					JSONArray messages = user.getJSONArray("inboxMes");
+					if (messages != null && messages.length() > 0) {
+						long lastMesTime = messages.getJSONObject(messages.length() - 1).getLong("createdAt");
+						if (lastMesTime > user.getLong("lastReadInboxTime")) {
+							user.put("lastReadInboxTime", lastMesTime);
+						}
+					}
+					return messages;
 				}
 			}
 		} catch (JSONException e) {
@@ -692,39 +749,93 @@ public class UserManager {
 		return null;
 	}
 	
-	public static void addMessageToUserInbox(String username, JSONObject message) {
-		
+	// Add message to user inbox offline and online
+	public static void addAdminMessageToThisUser(String username, JSONObject message, long createdAt) {
+		JSONObject user = getOnlineUser(username);
+		if (user != null) {
+  		Util.log("UserManager addAdminMessageToThisUser ONLINE " + username);
+			addMessageToUserInbox(user, message);
+		} else{
+  		Util.log("UserManager addAdminMessageToThisUser OFFLINE " + username);
+			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
+			Connection connection = null;
+			PreparedStatement updateStatement = null;
+			try {
+				connection = dbManager.getConnection();
+				
+				updateStatement = connection.prepareStatement("UPDATE user SET inboxMes = IF(inboxMes IS NULL OR inboxMes='' OR inboxMes = '[]', ?, CONCAT(SUBSTR(inboxMes, 1 , CHAR_LENGTH(inboxMes) - 1), ?)),"
+																											+ "lastAdminMesTime=?, lastInboxTime= IF(lastInboxTime > ?, lastInboxTime, ?) WHERE username=?");
+				
+				updateStatement.setString(1, "[" + message.toString() + "]");
+				updateStatement.setString(2, "," + message.toString() + "]");
+				updateStatement.setLong(3, message.getLong("createdAt"));
+				updateStatement.setLong(4, message.getLong("createdAt"));
+				updateStatement.setLong(5, createdAt);
+				updateStatement.setString(6, username);
+		    // Execute query
+				updateStatement.executeUpdate();
+			} catch (SQLException | JSONException e) {
+	  		Util.log("UserManager addMessageToUserInbox String SQLException | JSONException: " + e.toString());
+	  		// TO DO save exception to exception log file
+			}
+			finally
+			{
+				// Return connection to the DBManager connection pool
+				try {
+					if (connection != null) {
+						connection.close();
+					}
+					if (updateStatement != null) {
+						updateStatement.close();
+					}
+				} catch (SQLException e) {
+		  		Util.log("UserManager addMessageToUserInbox String 2 SQLException: " + e.toString());
+				}
+			}
+		}
 	}
 	
 	// add message to online user inbox
 	public static void addMessageToUserInbox(JSONObject user, JSONObject message) {
 		try {
+			long mesCreatedAt = message.getLong("createdAt");
+			long currentInboxTime = user.getLong("lastInboxTime");
 			if (user.has("inboxMes")) {
 				user.getJSONArray("inboxMes").put(message);
+				if (currentInboxTime < mesCreatedAt) {
+					user.put("lastInboxTime", mesCreatedAt);
+					currentInboxTime = mesCreatedAt;
+				}
 			} else {
 				user.put("inboxMes", new JSONArray().put(message));
 			}
+			ISFSObject params = new SFSObject();
+			JSONObject jsonData = new JSONObject();
+			jsonData.put("lastInboxTime", currentInboxTime);
+			params.putByteArray("jsonData", Util.StringToBytesArray(jsonData.toString()));
+			sfsApi.sendExtensionResponse(Command.PUSH_USER_NOTICES, params, sfsApi.getUserByName(user.getString("username")), null, false);
 		} catch (JSONException e) {
   		Util.log("UserManager addMessageToUserInbox JSONException:" + e.toString());
 		}
 	}
 	
 	// add admin message to all online user 
-	public static void addAdminMessageToOnlineUsers(JSONObject message) {
+	public static void addAdminMessageToOnlineUsers(JSONObject message, long createdAt) {
 		try {
 			JSONObject jsonData;
 			for (Map.Entry<String, JSONObject> map : onlineUsers.entrySet()) {
 				jsonData = map.getValue();
-				jsonData.put("lastAdminMesTime", message.getLong("createdAt"));
-				addMessageToUserInbox(jsonData, message);
-	  		Util.log("UserManager addMessageToOnlineUsers user:" + map.getKey());
+				if (jsonData.getLong("lastAdminMesTime") < createdAt) {
+					jsonData.put("lastAdminMesTime", createdAt);
+					addMessageToUserInbox(jsonData, message);
+		  		Util.log("UserManager addMessageToOnlineUsers user:" + map.getKey());
+				}
 			}
 		} catch (JSONException e) {
   		Util.log("UserManager addMessageToOnlineUsers JSONException:" + e.toString());
 		}
 	}
 	
-	// TO DO: update inbox message and other variable
 	public static void saveUserToDB(String username) {
 		JSONObject user = getOnlineUser(username);
 		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
@@ -739,7 +850,9 @@ public class UserManager {
 			connection = dbManager.getConnection();
 			updateStatement = connection.prepareStatement("UPDATE user SET password=?, displayName=?,"
 																																	+ "email=?, avatar=?, cash=?, gem=?, lastLogin=?,"
-																																	+ "facebookId=?, bossKill=?, totalWin=?, biggestWin=?, lastClaimedDaily=? WHERE username=?");
+																																	+ "facebookId=?, bossKill=?, totalWin=?, biggestWin=?, lastClaimedDaily=?,"
+																																	+ "inboxMes=?, lastInboxTime=?, lastReadInboxTime=?, lastAdminMesTime=?"
+																																	+ " WHERE username=?");
 			updateStatement.setString(1, user.getString("password"));
 			updateStatement.setString(2, user.getString("displayName"));
 			updateStatement.setString(3, user.getString("email"));
@@ -752,7 +865,11 @@ public class UserManager {
 			updateStatement.setInt(10, user.getInt("totalWin"));
 			updateStatement.setInt(11, user.getInt("biggestWin"));
 			updateStatement.setLong(12, user.getLong("lastDaily"));
-			updateStatement.setString(13, username);
+			updateStatement.setString(13, user.getJSONArray("inboxMes").toString());
+			updateStatement.setLong(14, user.getLong("lastInboxTime"));
+			updateStatement.setLong(15, user.getLong("lastReadInboxTime"));
+			updateStatement.setLong(16, user.getLong("lastAdminMesTime"));
+			updateStatement.setString(17, username);
 	    // Execute query
 			updateStatement.executeUpdate();
 		} catch (SQLException | JSONException e) {
@@ -798,12 +915,15 @@ public class UserManager {
 			user.put("lastReadInboxTime", userResultSet.getLong("lastReadInboxTime"));
 			user.put("lastAdminMesTime", userResultSet.getLong("lastAdminMesTime"));
 			
-			// TO DO: check if any admin message need to add
 			JSONArray adminMessages = AdminMessageManager.getNeedToAddMessages(user.getLong("lastAdminMesTime"));
 			int length = adminMessages.length();
 			if (length > 0) {
 				for (int i = 0; i < length; i++) {
-					addMessageToUserInbox(user, adminMessages.getJSONObject(i));
+					AdminMessage adminMes = (AdminMessage)adminMessages.get(i);
+					addMessageToUserInbox(user, adminMes.message);
+					if (user.getLong("lastAdminMesTime") < adminMes.createdAt) {
+						user.put("lastAdminMesTime", adminMes.createdAt);
+					}
 				}
 			}
 		} catch (JSONException e) {
