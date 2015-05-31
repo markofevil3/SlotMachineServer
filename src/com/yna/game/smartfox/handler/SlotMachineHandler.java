@@ -105,7 +105,6 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			String gameType = jsonData.getString("gameType");
 			// Join user to lobby
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
-
 			sfsApi.joinRoom(player, lobbyRoom, null, false, null, true, false);
 			String	roomName = jsonData.getString("roomName");
 			if (!Util.IsNullOrEmpty(roomName)) {

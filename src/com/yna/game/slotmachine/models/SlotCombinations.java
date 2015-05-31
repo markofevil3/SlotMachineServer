@@ -121,7 +121,6 @@ public class SlotCombinations {
   }
   
   public static int[] GenerateRandomItems(boolean isFreeSpin, String gameType) {
-		Util.log("GenerateRandomItems " + isFreeSpin);
   	int[] resultData = new int[MAX_DISPLAY_ITEMS];
   	for (int i = 0; i < MAX_DISPLAY_ITEMS; i++) {
   		resultData[i] = RandomItem(isFreeSpin, gameType);

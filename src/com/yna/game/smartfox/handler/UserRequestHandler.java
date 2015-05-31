@@ -99,8 +99,13 @@ public class UserRequestHandler extends ClientRequestHandler {
 	private void handleLoadLeaderboardCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
 			// TO DO: Get leaderboard by type
-			out.put("users", UserManager.getLeaderboardUsers());
-			out.put("type", jsonData.getInt("type"));
+			int type = jsonData.getInt("type");
+			if (type == GameConstants.LEADERBOARD_TOP_RICHER) {
+				out.put("users", UserManager.getTopRichers());
+			} else if (type == GameConstants.LEADERBOARD_TOP_KILLER){
+				out.put("users", UserManager.getTopKillers());
+			}
+			out.put("type", type);
 		} catch (Exception exception) {
 			trace("handleLoadLeaderboardCommand:JSONObject Exception:" + exception.toString());
 		}

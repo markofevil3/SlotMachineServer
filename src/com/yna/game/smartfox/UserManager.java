@@ -51,7 +51,9 @@ public class UserManager {
 	
 	private static ConcurrentHashMap<String, JSONObject> onlineUsers = new ConcurrentHashMap<String, JSONObject>();
 	private static JSONArray topRichers = null;
+	private static JSONArray topKillers = null;
 	private static Date topRichersLastUpdate;
+	private static Date topKillersLastUpdate;
 //	private static final int NEW_USER_CASH = 100000;
 //	private static final int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -341,16 +343,36 @@ public class UserManager {
 		}
 	}
 	
-	public static void updatePlayerCashAndKill(String username, int addCash, int addKill) {
+	public static void updatePlayerCashGemAndKill(String username, int addCash, int addGem, int addKill) {
 		try {
 			JSONObject userData = getOnlineUser(username);
-			int newVal = Math.max(0 ,userData.getInt("cash") + addCash);
-			userData.put("cash", newVal);
-			userData.put("bossKill", userData.getInt("bossKill") + addKill);
-			// TEST CODE - update buddy variable when player killed a boss
-			setBuddyVariables(SmartFoxServer.getInstance().getUserManager().getUserByName(userData.getString("username")), userData, false);
+			if (userData != null) {
+				userData.put("cash", Math.max(0, userData.getInt("cash") + addCash));
+				userData.put("gem", Math.max(0, userData.getInt("gem") + addGem));
+				userData.put("bossKill", userData.getInt("bossKill") + addKill);
+				// TEST CODE - update buddy variable when player killed a boss
+				setBuddyVariables(SmartFoxServer.getInstance().getUserManager().getUserByName(userData.getString("username")), userData, false);
+				Util.log("UserManager updatePlayerCashGemAndKill " + username + " " + addCash + " " + addGem + " " + addKill);
+			} else {
+				Util.log("UserManager updatePlayerCashGemAndKill user offline:" + username);
+			}
 		} catch (JSONException e) {
-			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
+			Util.log("UserManager updatePlayerCashGemAndKill JSONObject Error:" + e.toString());
+		}
+	}
+	
+	public static void updatePlayerBossKill(String username, int addKill) {
+		try {
+			JSONObject userData = getOnlineUser(username);
+			if (userData != null) {
+				userData.put("bossKill", userData.getInt("bossKill") + addKill);
+				setBuddyVariables(SmartFoxServer.getInstance().getUserManager().getUserByName(userData.getString("username")), userData, false);
+				Util.log("UserManager updatePlayerBossKill " + username + " " + addKill);
+			} else {
+				Util.log("UserManager updatePlayerBossKill user offline:" + username);
+			}
+		} catch (JSONException e) {
+			Util.log("UserManager updatePlayerBossKill JSONObject Error:" + e.toString());
 		}
 	}
 	
@@ -440,8 +462,65 @@ public class UserManager {
 //		return users;
 //	}
 	
-	// TO DO: get leaderboard by type
-	public static JSONArray getLeaderboardUsers() {
+	public static JSONArray getTopKillers() {
+		Date now = new Date();
+		if (topKillers == null || now.getTime() - topKillersLastUpdate.getTime() >= GameConstants.LEADERBOARD_UPDATE_INTERVAL * 1000) {
+  		Util.log("UserManager getTopKillers RELOAD LEADEARBOARD-------------");
+  		topKillers = new JSONArray();
+			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
+			Connection connection = null;
+			PreparedStatement selectStatement = null;
+			ResultSet selectResultSet = null;
+	    try {
+		  	// Grab a connection from the DBManager connection pool
+		    connection = dbManager.getConnection();
+		    // Throw error - cant get any connection
+		    if (connection == null) {
+		  		Util.log("UserManager getTopKillers Exception No Connection in pool");
+					return new JSONArray();
+		    } else {
+		  		selectStatement = connection.prepareStatement("SELECT username, displayName, avatar, cash, bossKill, totalWin, biggestWin FROM user where bossKill > 0 ORDER BY bossKill desc limit " + GameConstants.LEADERBOARD_NUMB_USERS);
+		      // Execute query
+			    selectResultSet = selectStatement.executeQuery();
+			    JSONObject user;
+			    while (selectResultSet.next()) {
+			    	user = new JSONObject();
+			    	user.put("username", selectResultSet.getString("username"));
+			    	user.put("displayName", selectResultSet.getString("displayName"));
+			    	user.put("cash", selectResultSet.getInt("cash"));
+			    	user.put("bossKill", selectResultSet.getInt("bossKill"));
+			    	user.put("totalWin", selectResultSet.getInt("totalWin"));
+			    	user.put("biggestWin", selectResultSet.getInt("biggestWin"));
+			    	topKillers.put(user);
+			    }
+		    }
+	    }
+	    catch (SQLException | JSONException e) {
+	  		Util.log("UserManager getTopKillers SQLException | JSONException: " + e.toString());
+				return new JSONArray();
+	    }
+
+			finally
+			{
+				// Return connection to the DBManager connection pool
+				try {
+					connection.close();
+					if (selectStatement != null) {
+						selectStatement.close();
+					}
+					if (selectResultSet != null) {
+						selectResultSet.close();
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			topKillersLastUpdate = now;
+		}
+		return topKillers;
+	}
+	
+	public static JSONArray getTopRichers() {
 		Date now = new Date();
 		if (topRichers == null || now.getTime() - topRichersLastUpdate.getTime() >= GameConstants.LEADERBOARD_UPDATE_INTERVAL * 1000) {
   		Util.log("UserManager getLeaderboardUsers RELOAD LEADEARBOARD-------------");

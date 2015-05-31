@@ -100,7 +100,6 @@ public class SlotCombinationPirate {
 			if (damage > 0) {
 		    JSONObject dataToOthers = new JSONObject();
 				dHP = Math.max(0, dHP - damage);
-		    // To do: no add Gem because could be remove
 				if (dHP == 0) {
 					// random treasure
 					int dropIndex = RandomDrop();
@@ -113,7 +112,9 @@ public class SlotCombinationPirate {
 					for (int i = 0; i < usersInRoom.size(); i++) {
 						String mUsername = usersInRoom.get(i).getName();
 						if (mUsername != player.getName()) {
-							UserManager.updatePlayerCashAndKill(mUsername, BOSS_DROP_CASH[dIndex][dropIndex], 1);
+							UserManager.updatePlayerCashGemAndKill(mUsername, BOSS_DROP_CASH[dIndex][dropIndex], BOSS_DROP_GEM[dIndex][dropIndex], 1);
+						} else {
+							UserManager.updatePlayerBossKill(mUsername, 1);
 						}
 					}
 					// spawn new BOSS

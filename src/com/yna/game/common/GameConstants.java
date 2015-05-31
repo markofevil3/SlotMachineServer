@@ -7,6 +7,9 @@ import java.io.IOException;
 public class GameConstants {
 	
 	public static final String GAMECONSTANTS_FILE_PATH = "/data/GameConstants.txt";
+	public static int LEADERBOARD_TOP_RICHER = 0;
+	public static int LEADERBOARD_TOP_KILLER = 1;
+	
 	public static int NEW_USER_CASH = 100000;
 	public static int LEADERBOARD_UPDATE_INTERVAL = 1800; // seconds
 	public static int LEADERBOARD_NUMB_USERS = 20;
