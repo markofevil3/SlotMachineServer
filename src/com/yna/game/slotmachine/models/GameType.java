@@ -32,6 +32,9 @@ public class GameType {
 	private static final String PIRATE_ROOM_GROUP = "pirateRooms";
 	private static final String PIRATE_ROOM_NAME = "pRoom";
 	
+	public static SlotCombinationPirate slotPirateInstance;
+	public static SlotCombinationDragon slotDragonInstance;
+	
 	public static String GetLoobyRoom(String gameType) {
 		switch (gameType) {
 		case SLOT_TYPE_FRUITS:
@@ -74,104 +77,114 @@ public class GameType {
 		return null;
 	}
 	
-	public static Random GetRandomMethod(String gameType) {
+  public static int[] GenerateRandomItems(boolean isFreeSpin, String gameType) {
 		switch (gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.random;
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.random;
 		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.random;
+			return slotDragonInstance.GenerateRandomItems(isFreeSpin, gameType);
 		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.random;
+			return slotPirateInstance.GenerateRandomItems(isFreeSpin, gameType);
 		}
-		Util.log("######GameType - GetRandomMethod null : " + gameType);
-		return new Random();
+		Util.log("######GameType - GenerateRandomItems null : " + gameType);
+		return null;
+  }
+	
+  public static JSONObject CalculateCombination(int[] reelData, int numLines, int betPerLine, String gameType, JSONObject out) {
+		switch (gameType) {
+		case SLOT_TYPE_DRAGON:
+			return slotDragonInstance.CalculateCombination(reelData, numLines, betPerLine, gameType, out);
+		case SLOT_TYPE_PIRATE:
+			return slotPirateInstance.CalculateCombination(reelData, numLines, betPerLine, gameType, out);
+		}
+		Util.log("######GameType - CalculateCombination null : " + gameType);
+		return null;
 	}
+	
+//	public static Random GetRandomMethod(String gameType) {
+//		switch (gameType) {
+//		case SLOT_TYPE_FRUITS:
+//			return SlotCombinationFruit.random;
+//		case SLOT_TYPE_HALLOWEEN:
+//			return SlotCombinationHalloween.random;
+//		case SLOT_TYPE_DRAGON:
+//			return SlotCombinationDragon.random;
+//		case SLOT_TYPE_PIRATE:
+//			return SlotCombinationPirate.random;
+//		}
+//		Util.log("######GameType - GetRandomMethod null : " + gameType);
+//		return new Random();
+//	}
 
-	public static int[] GetSpecialItemRate(String gameType) {
-		switch (gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.SPECIAL_ITEM_RATES;
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.SPECIAL_ITEM_RATES;
-		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.SPECIAL_ITEM_RATES;
-		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.SPECIAL_ITEM_RATES;
-		}
-		Util.log("######GameType - GetSpecialItemRate null : " + gameType);
-		return null;
-	}
+//	public static int[] GetSpecialItemRate(String gameType) {
+//		switch (gameType) {
+//		case SLOT_TYPE_FRUITS:
+//			return SlotCombinationFruit.SPECIAL_ITEM_RATES;
+//		case SLOT_TYPE_HALLOWEEN:
+//			return SlotCombinationHalloween.SPECIAL_ITEM_RATES;
+//		case SLOT_TYPE_DRAGON:
+//			return SlotCombinationDragon.SPECIAL_ITEM_RATES;
+//		case SLOT_TYPE_PIRATE:
+//			return SlotCombinationPirate.SPECIAL_ITEM_RATES;
+//		}
+//		Util.log("######GameType - GetSpecialItemRate null : " + gameType);
+//		return null;
+//	}
 	
-	public static int[] GetItemRate(String gameType) {
-		switch (gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.ITEM_RATES;
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.ITEM_RATES;
-		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.ITEM_RATES;
-		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.ITEM_RATES;
-		}
-		Util.log("######GameType - GetItemRate null : " + gameType);
-		return null;
-	}
+//	public static int[] GetItemRate(String gameType) {
+//		switch (gameType) {
+//		case SLOT_TYPE_FRUITS:
+//			return SlotCombinationFruit.ITEM_RATES;
+//		case SLOT_TYPE_HALLOWEEN:
+//			return SlotCombinationHalloween.ITEM_RATES;
+//		case SLOT_TYPE_DRAGON:
+//			return SlotCombinationDragon.ITEM_RATES;
+//		case SLOT_TYPE_PIRATE:
+//			return SlotCombinationPirate.ITEM_RATES;
+//		}
+//		Util.log("######GameType - GetItemRate null : " + gameType);
+//		return null;
+//	}
 	
-	public static int[][] GetPayout(String gameType) {
-		switch (gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.PAYOUTS;
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.PAYOUTS;
-		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.PAYOUTS;
-		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.PAYOUTS;
-		}
-		Util.log("######GameType - GetPayout null : " + gameType);
-		return null;
-	}
+//	public static int[][] GetPayout(String gameType) {
+//		switch (gameType) {
+//		case SLOT_TYPE_FRUITS:
+//			return SlotCombinationFruit.PAYOUTS;
+//		case SLOT_TYPE_HALLOWEEN:
+//			return SlotCombinationHalloween.PAYOUTS;
+//		case SLOT_TYPE_DRAGON:
+//			return SlotCombinationDragon.PAYOUTS;
+//		case SLOT_TYPE_PIRATE:
+//			return SlotCombinationPirate.PAYOUTS;
+//		}
+//		Util.log("######GameType - GetPayout null : " + gameType);
+//		return null;
+//	}
 
 	public static JSONObject SetGameVariable(String gameType, User player, Room room, SFSApi sfsApi) {
 		switch(gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.SetGameVariable(player, room, sfsApi);
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.SetGameVariable(player, room, sfsApi);
 		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.SetGameVariable(player, room, sfsApi);
+			return slotDragonInstance.SetGameVariable(player, room, sfsApi);
 		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.SetGameVariable(player, room, sfsApi);
+			return slotPirateInstance.SetGameVariable(player, room, sfsApi);
 		}
 		return new JSONObject();
 	}
 	
 	public static JSONObject UpdateGameVariable(String gameType, User player, Room room, SFSApi sfsApi, JSONObject jsonData, int totalWin) {
 		switch(gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
 		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
+			return slotDragonInstance.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
 		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
+			return slotPirateInstance.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
 		}
 		return jsonData;
 	}
 	
 	public static JSONObject GetGameVariable(String gameType, User player, Room room) {
 		switch(gameType) {
-		case SLOT_TYPE_FRUITS:
-			return SlotCombinationFruit.GetGameVariable(player, room);
-		case SLOT_TYPE_HALLOWEEN:
-			return SlotCombinationHalloween.GetGameVariable(player, room);
 		case SLOT_TYPE_DRAGON:
-			return SlotCombinationDragon.GetGameVariable(player, room);
+			return slotDragonInstance.GetGameVariable(player, room);
 		case SLOT_TYPE_PIRATE:
-			return SlotCombinationPirate.GetGameVariable(player, room);
+			return slotPirateInstance.GetGameVariable(player, room);
 		}
 		return new JSONObject();
 	}

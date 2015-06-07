@@ -212,13 +212,13 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			UserVariable userFreeSpin = player.getVariable("freeSpin");
 			int freeSpin = userFreeSpin == null ? 0 : userFreeSpin.getIntValue();
 			boolean isFreeSpin = freeSpin > 0;
-			int[] randomItems = SlotCombinations.GenerateRandomItems(isFreeSpin, gameType);
+			int[] randomItems = GameType.GenerateRandomItems(isFreeSpin, gameType);
 			if (freeSpin > 0) {
 				freeSpin -= 1;
 				// TEST CODE -- commented because unused??
 //				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
-			out = SlotCombinations.CalculateCombination(randomItems, numLines, betPerLine, gameType, out);
+			out = GameType.CalculateCombination(randomItems, numLines, betPerLine, gameType, out);
 			freeSpin += out.getInt("frCount");
 			// TEST CODE -- commented because unused??
 //			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));

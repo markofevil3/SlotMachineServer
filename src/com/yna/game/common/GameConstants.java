@@ -16,6 +16,7 @@ public class GameConstants {
 	public static int DAILY_REWARD_MILI = 300000;
 	public static int DAILY_REWARD_CASH = 50000;
 	public static int INVITE_MESSAGE_EXPIRED_SECONDS = 50;
+	public static int LOBBY_MAX_USERS = 3000;
 
 	public static void init() {
 		try {
@@ -42,6 +43,9 @@ public class GameConstants {
 							break;
 						case "INVITE_MESSAGE_EXPIRED_SECONDS":
 							INVITE_MESSAGE_EXPIRED_SECONDS = Integer.parseInt(arr[1].trim());
+							break;
+						case "LOBBY_MAX_USERS":
+							LOBBY_MAX_USERS = Integer.parseInt(arr[1].trim());
 							break;
 					}
 				}

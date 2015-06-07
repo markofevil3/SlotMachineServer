@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.smartfoxserver.v2.SmartFoxServer;
 import com.smartfoxserver.v2.api.CreateRoomSettings;
+import com.smartfoxserver.v2.api.ISFSApi;
 import com.smartfoxserver.v2.core.SFSEventType;
 import com.smartfoxserver.v2.db.IDBManager;
 import com.smartfoxserver.v2.entities.Room;
@@ -17,7 +18,10 @@ import com.smartfoxserver.v2.entities.Zone;
 import com.smartfoxserver.v2.entities.variables.RoomVariable;
 import com.smartfoxserver.v2.entities.variables.SFSRoomVariable;
 import com.smartfoxserver.v2.extensions.SFSExtension;
+import com.yna.game.common.GameConstants;
 import com.yna.game.slotmachine.models.GameType;
+import com.yna.game.slotmachine.models.SlotCombinationDragon;
+import com.yna.game.slotmachine.models.SlotCombinationPirate;
 import com.yna.game.slotmachine.models.SlotCombinations;
 import com.yna.game.smartfox.handler.SlotMachineHandler;
 import com.yna.game.smartfox.handler.TienLenMienBacHandler;
@@ -27,15 +31,21 @@ import com.yna.game.tienlen.models.TienLenManager;
 
 public class GambleExtension extends SFSExtension {
 	
-	private int LOBBY_MAX_USERS = 3000;
 	private String LOBBY_GROUP_ID = "lobby";
 	
 	@Override
 	public void init() {
 		TienLenManager.init(this);
-		SlotCombinations.Init();
+//		SlotCombinations.Init();
+		// TO DO: create new slotmachine instance and init here
+		trace("-------------------GambleExtension Init all slot machines------------------------");
+		GameType.slotPirateInstance = new SlotCombinationPirate();
+		GameType.slotDragonInstance = new SlotCombinationDragon();
+		trace("-------------------GambleExtension Init all slot machines-------DONE-------------");
+		trace("-------------------GambleExtension Create LOBBY ROOMS------------------------");
 		createLobbyRooms();
-		
+		trace("-------------------GambleExtension Create LOBBY ROOMS----DONE-------------");
+
 		UserRequestHandler.init();
 		
 		addRequestHandler(GameId.TLMB, TienLenMienBacHandler.class);
@@ -119,7 +129,7 @@ public class GambleExtension extends SFSExtension {
 		}
 		
 		CreateRoomSettings roomSettings = new CreateRoomSettings();
-		roomSettings.setMaxUsers(LOBBY_MAX_USERS);
+		roomSettings.setMaxUsers(GameConstants.LOBBY_MAX_USERS);
 		roomSettings.setGroupId(LOBBY_GROUP_ID);
 		roomSettings.setAutoRemoveMode(SFSRoomRemoveMode.NEVER_REMOVE );
 		roomSettings.setGame(false);
@@ -127,29 +137,36 @@ public class GambleExtension extends SFSExtension {
 		roomSettings.setHidden(true);
 		try {
 			// Set lobby DRAGON room
-			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_DRAGON));
-			Room createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);
-			RoomVariable jackpot = new SFSRoomVariable("jackpot", jackpotDragon);
-			createdRoom.setVariable(jackpot);
-			trace("DRAGON " + jackpotDragon);
+			ISFSApi api = getApi();
+			Room createdRoom;
+			RoomVariable jackpot;
+			if (zone.getRoomByName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_DRAGON)) == null) {
+				roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_DRAGON));
+				createdRoom = api.createRoom(zone, roomSettings, null, false, null, false, false);
+				jackpot = new SFSRoomVariable("jackpot", jackpotDragon);
+				createdRoom.setVariable(jackpot);
+				trace("DRAGON " + jackpotDragon);
+			}
 			// Set lobby PIRATE room
-			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_PIRATE));
-			createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);
-			jackpot = new SFSRoomVariable("jackpot", jackpotPirate);
-			createdRoom.setVariable(jackpot);
-			trace("PIRATE " + jackpotPirate);
-			// Set lobby HALLOWEEN room
-			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_HALLOWEEN));
-			createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);
-			jackpot = new SFSRoomVariable("jackpot", jackpotHalloween);
-			createdRoom.setVariable(jackpot);
-			trace("HALLOWEEN " + jackpotHalloween);
-			// Set lobby FRUITS room
-			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_FRUITS));
-			createdRoom = getApi().createRoom(zone, roomSettings, null, false, null, false, false);
-			jackpot = new SFSRoomVariable("jackpot", jackpotFruit);
-			createdRoom.setVariable(jackpot);
-			trace("FRUITS " + jackpotFruit);
+			if (zone.getRoomByName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_PIRATE)) == null) {
+				roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_PIRATE));
+				createdRoom = api.createRoom(zone, roomSettings, null, false, null, false, false);
+				jackpot = new SFSRoomVariable("jackpot", jackpotPirate);
+				createdRoom.setVariable(jackpot);
+				trace("PIRATE " + jackpotPirate);
+			}
+//			// Set lobby HALLOWEEN room
+//			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_HALLOWEEN));
+//			createdRoom = api.createRoom(zone, roomSettings, null, false, null, false, false);
+//			jackpot = new SFSRoomVariable("jackpot", jackpotHalloween);
+//			createdRoom.setVariable(jackpot);
+//			trace("HALLOWEEN " + jackpotHalloween);
+//			// Set lobby FRUITS room
+//			roomSettings.setName(GameType.GetLoobyRoom(GameType.SLOT_TYPE_FRUITS));
+//			createdRoom = api.createRoom(zone, roomSettings, null, false, null, false, false);
+//			jackpot = new SFSRoomVariable("jackpot", jackpotFruit);
+//			createdRoom.setVariable(jackpot);
+//			trace("FRUITS " + jackpotFruit);
 		} catch (Exception exception) {
 			trace("createLobbyRooms:Exception:" + exception.toString());
 		}
