@@ -215,13 +215,11 @@ public class SlotMachineHandler extends ClientRequestHandler {
 			int[] randomItems = GameType.GenerateRandomItems(isFreeSpin, gameType);
 			if (freeSpin > 0) {
 				freeSpin -= 1;
-				// TEST CODE -- commented because unused??
-//				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
+				player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			}
 			out = GameType.CalculateCombination(randomItems, numLines, betPerLine, gameType, out);
 			freeSpin += out.getInt("frCount");
-			// TEST CODE -- commented because unused??
-//			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
+			player.setVariable(new SFSUserVariable("freeSpin", freeSpin));
 			JSONArray winningGold = out.getJSONArray("wGold");
 			int totalWin = 0; 
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
@@ -271,6 +269,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private void handleLeaveCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
+			player.setVariable(new SFSUserVariable("freeSpin", 0));
 			String gameType = jsonData.getString("gameType");
 			Room lobbyRoom = zone.getRoomByName(GameType.GetLoobyRoom(gameType));
 			sfsApi.leaveRoom(player, lobbyRoom, false, false);
