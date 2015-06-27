@@ -327,7 +327,7 @@ public class UserManager {
 	public static void updatePlayerCash(String username, int updateVal) {
 		try {
 			JSONObject userData = getOnlineUser(username);
-			int newVal = Math.max(0 ,userData.getInt("cash") + updateVal);
+			long newVal = Math.max(0 ,userData.getLong("cash") + updateVal);
 			userData.put("cash", newVal);
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
@@ -336,7 +336,7 @@ public class UserManager {
 	
 	public static void updatePlayerCash(JSONObject userData, int updateVal) {
 		try {
-			int newVal = Math.max(0 ,userData.getInt("cash") + updateVal);
+			long newVal = Math.max(0 ,userData.getLong("cash") + updateVal);
 			userData.put("cash", newVal);
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
@@ -347,7 +347,7 @@ public class UserManager {
 		try {
 			JSONObject userData = getOnlineUser(username);
 			if (userData != null) {
-				userData.put("cash", Math.max(0, userData.getInt("cash") + addCash));
+				userData.put("cash", Math.max(0, userData.getLong("cash") + addCash));
 				userData.put("gem", Math.max(0, userData.getInt("gem") + addGem));
 				userData.put("bossKill", userData.getInt("bossKill") + addKill);
 				// TEST CODE - update buddy variable when player killed a boss
@@ -378,7 +378,7 @@ public class UserManager {
 	
 	public static void updatePlayerCashAndGem(JSONObject userData, int updateCash, int updateGem) {
 		try {
-			userData.put("cash", Math.max(0 ,userData.getInt("cash") + updateCash));
+			userData.put("cash", Math.max(0 ,userData.getLong("cash") + updateCash));
 			userData.put("gem", Math.max(0 ,userData.getInt("gem") + updateGem));
 		} catch (JSONException e) {
 			Util.log("UserManager DeductUserCash JSONObject Error:" + e.toString());
@@ -487,7 +487,7 @@ public class UserManager {
 			    	user = new JSONObject();
 			    	user.put("username", selectResultSet.getString("username"));
 			    	user.put("displayName", selectResultSet.getString("displayName"));
-			    	user.put("cash", selectResultSet.getInt("cash"));
+			    	user.put("cash", selectResultSet.getLong("cash"));
 			    	user.put("bossKill", selectResultSet.getInt("bossKill"));
 			    	user.put("totalWin", selectResultSet.getInt("totalWin"));
 			    	user.put("biggestWin", selectResultSet.getInt("biggestWin"));
@@ -545,7 +545,7 @@ public class UserManager {
 			    	user = new JSONObject();
 			    	user.put("username", selectResultSet.getString("username"));
 			    	user.put("displayName", selectResultSet.getString("displayName"));
-			    	user.put("cash", selectResultSet.getInt("cash"));
+			    	user.put("cash", selectResultSet.getLong("cash"));
 			    	user.put("bossKill", selectResultSet.getInt("bossKill"));
 			    	user.put("totalWin", selectResultSet.getInt("totalWin"));
 			    	user.put("biggestWin", selectResultSet.getInt("biggestWin"));
@@ -739,7 +739,7 @@ public class UserManager {
 			  		insertStatement.setString(1, username);
 				    insertStatement.setString(2, user.getString("password"));
 				    insertStatement.setString(3, user.getString("displayName"));
-				    insertStatement.setInt(4, user.getInt("cash"));
+				    insertStatement.setLong(4, user.getLong("cash"));
 				    insertStatement.setString(5, "[]");
 			      // Execute query
 				    insertStatement.executeUpdate();
@@ -755,7 +755,7 @@ public class UserManager {
 		  		insertStatement.setString(1, username);
 			    insertStatement.setString(2, user.getString("password"));
 			    insertStatement.setString(3, user.getString("displayName"));
-			    insertStatement.setInt(4, user.getInt("cash"));
+			    insertStatement.setLong(4, user.getLong("cash"));
 			    insertStatement.setString(5, user.getString("email"));
 			    insertStatement.setString(6, user.getString("avatar"));
 			    insertStatement.setString(7, username);
@@ -941,7 +941,7 @@ public class UserManager {
 			updateStatement.setString(2, user.getString("displayName"));
 			updateStatement.setString(3, user.getString("email"));
 			updateStatement.setString(4, user.getString("avatar"));
-			updateStatement.setInt(5, user.getInt("cash"));
+			updateStatement.setLong(5, user.getLong("cash"));
 			updateStatement.setInt(6, user.getInt("gem"));
 			updateStatement.setTimestamp(7, Util.ConvertStringToTimestamp(user.getString("lastLogin")));
 			updateStatement.setString(8, user.getString("facebookId"));
@@ -984,7 +984,7 @@ public class UserManager {
 			user.put("displayName", userResultSet.getString("displayName"));
 			user.put("email", userResultSet.getString("email"));
 			user.put("avatar", userResultSet.getString("avatar"));
-			user.put("cash", userResultSet.getInt("cash"));
+			user.put("cash", userResultSet.getLong("cash"));
 			user.put("gem", userResultSet.getInt("gem"));
 			user.put("createdAt", userResultSet.getTimestamp("createdAt").toString());
 			user.put("lastLogin", userResultSet.getTimestamp("lastLogin").toString());
@@ -1026,7 +1026,7 @@ public class UserManager {
 				viewData.put("displayName", userResultSet.getString("displayName"));
 				viewData.put("email", userResultSet.getString("email"));
 				viewData.put("avatar", userResultSet.getString("avatar"));
-				viewData.put("cash", userResultSet.getInt("cash"));
+				viewData.put("cash", userResultSet.getLong("cash"));
 				viewData.put("gem", userResultSet.getInt("gem"));
 				viewData.put("createdAt", userResultSet.getTimestamp("createdAt").toString());
 				viewData.put("lastLogin", userResultSet.getTimestamp("lastLogin").toString());
@@ -1039,7 +1039,7 @@ public class UserManager {
 				viewData.put("displayName", user.getString("displayName"));
 				viewData.put("email", user.getString("email"));
 				viewData.put("avatar", user.getString("avatar"));
-				viewData.put("cash", user.getInt("cash"));
+				viewData.put("cash", user.getLong("cash"));
 				viewData.put("gem", user.getInt("gem"));
 				viewData.put("createdAt", user.getString("createdAt"));
 				viewData.put("lastLogin", user.getString("lastLogin"));

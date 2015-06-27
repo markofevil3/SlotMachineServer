@@ -161,7 +161,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			ArrayList<UserVariable> variables = new ArrayList<UserVariable>();
 			SFSUserVariable variable = new SFSUserVariable("displayName", jsonData.getString("displayName"), false);
 			variables.add(variable);
-			variable = new SFSUserVariable("cash", jsonData.getInt("cash"), false);
+			variable = new SFSUserVariable("cash", jsonData.getLong("cash"), false);
 			variables.add(variable);
 			variable = new SFSUserVariable("avatar", jsonData.getString("avatar"), false);
 			variables.add(variable);
