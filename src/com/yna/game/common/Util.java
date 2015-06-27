@@ -60,4 +60,26 @@ public class Util {
 	public static Timestamp ConvertStringToTimestamp(String timeString) {
 		return Timestamp.valueOf(timeString);
 	}
+	
+	public static void StringToIntArray(String input, int[] fillArr) {
+		String[] split = input.trim().split(",");
+		for (int i = 0; i < fillArr.length; i++) {
+			if (split.length - 1 >= i) {
+				fillArr[i] = Integer.parseInt(split[i].trim());
+			}
+		}
+		split = null;
+	}
+	
+	public static String IntArrayToString(int[] arr) {
+		String st = "";
+		for (int i = 0; i < arr.length; i++) {
+			if (i != arr.length - 1) {
+				st += arr[i] + ",";
+			} else {
+				st += arr[i];
+			}
+		}
+		return st;
+	}
 }

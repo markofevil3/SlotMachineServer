@@ -124,11 +124,13 @@ public class SlotMachineHandler extends ClientRequestHandler {
 						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
 						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
 						tempObj.put("username", otherPlayer.getName());
+						tempObj.put("avatar", otherPlayer.getVariable("avatar").getStringValue());
 						players.put(tempObj);
 					}
 					out.put("otherPlayers", players);
 					out.put("roomId", targetRoom.getName());
 					out.put("roomData", GameType.GetGameVariable(gameType, player, targetRoom));
+					out.put("betPerLines", Util.IntArrayToString(GameType.GetBetPerLines(gameType)));
 				} else {
 					out.put(ErrorCode.PARAM, ErrorCode.SlotMachine.ROOM_IS_FULL);
 					return;
@@ -156,15 +158,18 @@ public class SlotMachineHandler extends ClientRequestHandler {
 						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
 						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
 						tempObj.put("username", otherPlayer.getName());
+						tempObj.put("avatar", otherPlayer.getVariable("avatar").getStringValue());
 						players.put(tempObj);
 					}
 					out.put("otherPlayers", players);
 					out.put("roomId", joinRoom.getName());
 					out.put("roomData", GameType.GetGameVariable(gameType, player, joinRoom));
+					out.put("betPerLines", Util.IntArrayToString(GameType.GetBetPerLines(gameType)));
 				} else {
 					out.put(ErrorCode.PARAM, createSFSGameRoom(player, gameType, out));
 					// put empty other players for new room
 					out.put("otherPlayers", new JSONArray());
+					out.put("betPerLines", Util.IntArrayToString(GameType.GetBetPerLines(gameType)));
 				}
 			}
 			out.put("gameType", gameType);
@@ -205,10 +210,11 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private void handlePlayCommand(User player, JSONObject jsonData, JSONObject out) {
 		try {
-			int betPerLine = jsonData.getInt("betPerLine");
+			String gameType = jsonData.getString("gameType");
+			int betPerLineIndex = jsonData.getInt("betPerLine");
+			int betPerLine = GameType.GetBetPerLineVal(betPerLineIndex, gameType);
 			int numLines = jsonData.getInt("numLines");
 			int totalCost = betPerLine * numLines;
-			String gameType = jsonData.getString("gameType");
 			UserVariable userFreeSpin = player.getVariable("freeSpin");
 			int freeSpin = userFreeSpin == null ? 0 : userFreeSpin.getIntValue();
 			boolean isFreeSpin = freeSpin > 0;

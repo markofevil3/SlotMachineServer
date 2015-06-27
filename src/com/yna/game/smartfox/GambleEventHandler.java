@@ -163,6 +163,8 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			variables.add(variable);
 			variable = new SFSUserVariable("cash", jsonData.getInt("cash"), false);
 			variables.add(variable);
+			variable = new SFSUserVariable("avatar", jsonData.getString("avatar"), false);
+			variables.add(variable);
 			player.setVariables(variables);
 			
 			UserManager.setBuddyVariables(player, jsonData, true);

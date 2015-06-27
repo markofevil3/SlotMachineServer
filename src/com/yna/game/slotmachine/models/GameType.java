@@ -14,7 +14,8 @@ public class GameType {
 	public static final String SLOT_TYPE_FRUITS = "slot_fruit";
 	public static final String SLOT_TYPE_HALLOWEEN = "slot_halloween";
 	public static final String SLOT_TYPE_DRAGON = "slot_dragon";
-	public static final String SLOT_TYPE_PIRATE= "slot_pirate";
+	public static final String SLOT_TYPE_PIRATE = "slot_pirate";
+	public static final String SLOT_TYPE_ZOMBIE = "slot_zombie";
 	
 	private static final String FRUIT_LOBBY_ROOM = "fruitLobby";
 	private static final String FRUIT_ROOM_GROUP = "fruitRooms";
@@ -32,8 +33,13 @@ public class GameType {
 	private static final String PIRATE_ROOM_GROUP = "pirateRooms";
 	private static final String PIRATE_ROOM_NAME = "pRoom";
 	
+	private static final String ZOMBIE_LOBBY_ROOM = "zombieLobby";
+	private static final String ZOMBIE_ROOM_GROUP = "zombieRooms";
+	private static final String ZOMBIE_ROOM_NAME = "zRoom";
+	
 	public static SlotCombinationPirate slotPirateInstance;
 	public static SlotCombinationDragon slotDragonInstance;
+	public static SlotCombinationZombie slotZombieInstance;
 	
 	public static String GetLoobyRoom(String gameType) {
 		switch (gameType) {
@@ -45,6 +51,8 @@ public class GameType {
 			return DRAGON_LOBBY_ROOM;
 		case SLOT_TYPE_PIRATE:
 			return PIRATE_LOBBY_ROOM;
+		case SLOT_TYPE_ZOMBIE:
+			return ZOMBIE_LOBBY_ROOM;
 		}
 		return null;
 	}
@@ -59,6 +67,8 @@ public class GameType {
 			return DRAGON_ROOM_GROUP;
 		case SLOT_TYPE_PIRATE:
 			return PIRATE_ROOM_GROUP;
+		case SLOT_TYPE_ZOMBIE:
+			return ZOMBIE_ROOM_GROUP;
 		}
 		return null;
 	}
@@ -73,7 +83,35 @@ public class GameType {
 			return DRAGON_ROOM_NAME;
 		case SLOT_TYPE_PIRATE:
 			return PIRATE_ROOM_NAME;
+		case SLOT_TYPE_ZOMBIE:
+			return ZOMBIE_ROOM_NAME;
 		}
+		return null;
+	}
+	
+	public static int GetBetPerLineVal(int index, String gameType) {
+		switch (gameType) {
+		case SLOT_TYPE_DRAGON:
+			return slotDragonInstance.GetBetPerLines()[index];
+		case SLOT_TYPE_PIRATE:
+			return slotPirateInstance.GetBetPerLines()[index];
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.GetBetPerLines()[index];
+		}
+		Util.log("######GameType - GetBetPerLineVal null : " + gameType);
+		return 1;
+	}
+	
+	public static int[] GetBetPerLines(String gameType) {
+		switch (gameType) {
+		case SLOT_TYPE_DRAGON:
+			return slotDragonInstance.GetBetPerLines();
+		case SLOT_TYPE_PIRATE:
+			return slotPirateInstance.GetBetPerLines();
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.GetBetPerLines();
+		}
+		Util.log("######GameType - GetBetPerLines null : " + gameType);
 		return null;
 	}
 	
@@ -83,6 +121,8 @@ public class GameType {
 			return slotDragonInstance.GenerateRandomItems(isFreeSpin, gameType);
 		case SLOT_TYPE_PIRATE:
 			return slotPirateInstance.GenerateRandomItems(isFreeSpin, gameType);
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.GenerateRandomItems(isFreeSpin, gameType);
 		}
 		Util.log("######GameType - GenerateRandomItems null : " + gameType);
 		return null;
@@ -94,6 +134,8 @@ public class GameType {
 			return slotDragonInstance.CalculateCombination(reelData, numLines, betPerLine, gameType, out);
 		case SLOT_TYPE_PIRATE:
 			return slotPirateInstance.CalculateCombination(reelData, numLines, betPerLine, gameType, out);
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.CalculateCombination(reelData, numLines, betPerLine, gameType, out);
 		}
 		Util.log("######GameType - CalculateCombination null : " + gameType);
 		return null;
@@ -165,6 +207,8 @@ public class GameType {
 			return slotDragonInstance.SetGameVariable(player, room, sfsApi);
 		case SLOT_TYPE_PIRATE:
 			return slotPirateInstance.SetGameVariable(player, room, sfsApi);
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.SetGameVariable(player, room, sfsApi);
 		}
 		return new JSONObject();
 	}
@@ -175,6 +219,8 @@ public class GameType {
 			return slotDragonInstance.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
 		case SLOT_TYPE_PIRATE:
 			return slotPirateInstance.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.UpdateGameVariable(player, room, sfsApi, jsonData, totalWin);
 		}
 		return jsonData;
 	}
@@ -185,6 +231,8 @@ public class GameType {
 			return slotDragonInstance.GetGameVariable(player, room);
 		case SLOT_TYPE_PIRATE:
 			return slotPirateInstance.GetGameVariable(player, room);
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.GetGameVariable(player, room);
 		}
 		return new JSONObject();
 	}
