@@ -122,7 +122,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 						tempObj = new JSONObject();
 						otherPlayer = otherPlayers.get(i);
 						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
-						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
+						tempObj.put("cash", otherPlayer.getVariable("cash").getDoubleValue().longValue());
 						tempObj.put("username", otherPlayer.getName());
 						tempObj.put("avatar", otherPlayer.getVariable("avatar").getStringValue());
 						players.put(tempObj);
@@ -156,7 +156,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 						tempObj = new JSONObject();
 						otherPlayer = otherPlayers.get(i);
 						tempObj.put("displayName", otherPlayer.getVariable("displayName").getStringValue());
-						tempObj.put("cash", otherPlayer.getVariable("cash").getIntValue());
+						tempObj.put("cash", otherPlayer.getVariable("cash").getDoubleValue().longValue());
 						tempObj.put("username", otherPlayer.getName());
 						tempObj.put("avatar", otherPlayer.getVariable("avatar").getStringValue());
 						players.put(tempObj);
@@ -268,7 +268,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private void updatePlayerCash(User player, int val) {
 		UserManager.updatePlayerCash(player.getName(), val);
-		UserVariable variable = new SFSUserVariable("cash", Math.max(0, player.getVariable("cash").getIntValue() + val));
+		UserVariable variable = new SFSUserVariable("cash", Math.max(0, player.getVariable("cash").getDoubleValue().longValue() + val));
 		// To do: should or not fire client event here?
 		sfsApi.setUserVariables(player, Arrays.asList(variable), true, false);
 	}

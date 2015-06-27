@@ -15,6 +15,7 @@ import com.smartfoxserver.v2.buddylist.SFSBuddyVariable;
 import com.smartfoxserver.v2.core.ISFSEvent;
 import com.smartfoxserver.v2.core.SFSConstants;
 import com.smartfoxserver.v2.core.SFSEventParam;
+import com.smartfoxserver.v2.core.ServerState;
 import com.smartfoxserver.v2.entities.Room;
 import com.smartfoxserver.v2.entities.User;
 import com.smartfoxserver.v2.entities.data.ISFSObject;
@@ -25,6 +26,7 @@ import com.smartfoxserver.v2.exceptions.SFSErrorData;
 import com.smartfoxserver.v2.exceptions.SFSException;
 import com.smartfoxserver.v2.exceptions.SFSLoginException;
 import com.smartfoxserver.v2.extensions.BaseServerEventHandler;
+import com.smartfoxserver.v2.util.ClientDisconnectionReason;
 import com.smartfoxserver.bitswarm.sessions.Session;
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.Util;
@@ -118,12 +120,9 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			break;
 		case USER_DISCONNECT:
 			user = (User)event.getParameter(SFSEventParam.USER);
-			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
+			trace("------handleServerEvent - USER_DISCONNECT: " + getName());
 			UserManager.saveUserToDB(user.getName());
-			if (!user.getSession().isConnected()) {
-				trace("------handleServerEvent - USER_DISCONNECT22222: " + user.toString());
-				UserManager.removeUser(user.getName());
-			}
+			UserManager.removeUser(user.getName());
 			break;
 		case USER_LOGOUT:
 			user = (User)event.getParameter(SFSEventParam.USER);

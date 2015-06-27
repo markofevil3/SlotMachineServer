@@ -70,7 +70,7 @@ public class UserManager {
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
 		onlineUsers.put(username, user);
-		Util.log("onlineUsers Count: " + onlineUsers.size());
+		Util.log("addUser onlineUsers Count: " + onlineUsers.size());
 	}
 	
 	// TO DO: should check online first???
@@ -1063,7 +1063,7 @@ public class UserManager {
 
 				return;
 			}
-			Util.log("setBuddyVariables:player " + player.getVariable("displayName") + " " + player.getVariable("cash").getIntValue());
+			Util.log("setBuddyVariables:player " + player.getVariable("displayName") + " " + player.getVariable("cash").getDoubleValue().longValue());
 
 			if (buddyApi == null) {
 				buddyApi = SmartFoxServer.getInstance().getAPIManager().getBuddyApi();
@@ -1073,10 +1073,10 @@ public class UserManager {
 			}
 			List<BuddyVariable> vars = new ArrayList<BuddyVariable>();
 			vars.add( new SFSBuddyVariable("displayName", player.getVariable("displayName").getStringValue()));
-			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("cash", player.getVariable("cash").getDoubleValue().longValue()));
 			vars.add( new SFSBuddyVariable("facebookId", jsonData.getString("facebookId")));
 			vars.add( new SFSBuddyVariable("avatar", jsonData.getString("avatar")));
-			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getIntValue()));
+			vars.add( new SFSBuddyVariable("$cash", player.getVariable("cash").getDoubleValue().longValue()));
 			vars.add( new SFSBuddyVariable("$displayName", player.getVariable("displayName").getStringValue()));
 			vars.add( new SFSBuddyVariable("$facebookId", jsonData.getString("facebookId")));
 			vars.add( new SFSBuddyVariable("$avatar", jsonData.getString("avatar")));
