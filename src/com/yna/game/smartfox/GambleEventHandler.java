@@ -120,7 +120,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			break;
 		case USER_DISCONNECT:
 			user = (User)event.getParameter(SFSEventParam.USER);
-			trace("------handleServerEvent - USER_DISCONNECT: " + getName());
+			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
 			UserManager.saveUserToDB(user.getName());
 			UserManager.removeUser(user.getName());
 			break;
