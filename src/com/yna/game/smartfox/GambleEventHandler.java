@@ -114,21 +114,19 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		case USER_JOIN_ZONE:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			if (user != null) {
-				setUserVariables(user, UserManager.getOnlineUser(user.getName()));
+				setUserVariables(user, UserManager.getOnlineUserClass(user.getName()));
 			}
 			trace("##handleServerEvent - USER_JOIN_ZONE: " + user);
 			break;
 		case USER_DISCONNECT:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_DISCONNECT: " + user.getName());
-			UserManager.saveUserToDB(user.getName());
-			UserManager.removeUser(user.getName());
+			UserManager.saveUserToDB(user.getName(), true);
 			break;
 		case USER_LOGOUT:
 			user = (User)event.getParameter(SFSEventParam.USER);
 			trace("------handleServerEvent - USER_LOGOUT: " + user.getName());
-			UserManager.saveUserToDB(user.getName());
-			UserManager.removeUser(user.getName());
+			UserManager.saveUserToDB(user.getName(), false);
 			break;
 		case PUBLIC_MESSAGE:
 			user = (User)event.getParameter(SFSEventParam.USER);
@@ -157,8 +155,9 @@ public class GambleEventHandler extends BaseServerEventHandler {
 		}
 	}
 	
-	private void setUserVariables(User player, JSONObject jsonData) {
+	private void setUserVariables(User player, OnlineUser onlineUserClass) {
 		try {
+			JSONObject jsonData = onlineUserClass.jsonData;
 			trace("setUserVariables:"+ player + " | " + jsonData.toString());
 			ArrayList<UserVariable> variables = new ArrayList<UserVariable>();
 			SFSUserVariable variable = new SFSUserVariable("displayName", jsonData.getString("displayName"), false);
@@ -170,7 +169,7 @@ public class GambleEventHandler extends BaseServerEventHandler {
 			player.setVariables(variables);
 			
 			UserManager.setBuddyVariables(player, jsonData, true);
-			
+			onlineUserClass.ClearExpiredTime();
 		} catch (Exception exception) {
 			// TO DO: force reload game
 			trace("setUserVariables:Exception:" + exception.toString());

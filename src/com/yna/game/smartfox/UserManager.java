@@ -42,6 +42,7 @@ import java.sql.SQLException;
 
 
 
+
 import com.yna.game.common.ErrorCode;
 import com.yna.game.common.GameConstants;
 import com.yna.game.common.Util;
@@ -49,7 +50,7 @@ import com.yna.game.slotmachine.models.Command;
 
 public class UserManager {
 	
-	private static ConcurrentHashMap<String, JSONObject> onlineUsers = new ConcurrentHashMap<String, JSONObject>();
+	private static ConcurrentHashMap<String, OnlineUser> onlineUsers = new ConcurrentHashMap<String, OnlineUser>();
 	private static JSONArray topRichers = null;
 	private static JSONArray topKillers = null;
 	private static Date topRichersLastUpdate;
@@ -69,7 +70,7 @@ public class UserManager {
 	
 	// Add user to cache list
 	public static void addUser(String username, JSONObject user) {
-		onlineUsers.put(username, user);
+		onlineUsers.put(username, new OnlineUser(user));
 		Util.log("addUser onlineUsers Count: " + onlineUsers.size());
 	}
 	
@@ -253,11 +254,19 @@ public class UserManager {
 	
 	// Get user from cache list
 	public static JSONObject getOnlineUser(String username) {
+		OnlineUser ou = onlineUsers.get(username);
+		if (ou != null) {
+			return ou.jsonData;
+		}
+		return null;
+	}
+	
+	public static OnlineUser getOnlineUserClass(String username) {
 		return onlineUsers.get(username);
 	}
 	
 	public static JSONObject getUser(String username, boolean isViewing) throws JSONException {
-		JSONObject user = onlineUsers.get(username);
+		JSONObject user = getOnlineUser(username);
 		JSONObject viewData = new JSONObject();
 		if (user == null) {
 			IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
@@ -583,62 +592,28 @@ public class UserManager {
 		onlineUsers.remove(username);
 		Util.log("-----------Online Users: " + countOnlineUSer());
 	}
-
-	// Get multiple users by list usernames (online and offline)
-//	public static JSONArray getUsers(JSONArray usernameList) throws JSONException {
-//		String username;
-//		JSONObject tempUser;
-//		JSONObject user;
-//		JSONArray friends = new JSONArray();
-//		JSONArray offlineUsers = new JSONArray();
-//		// Get online users from cache
-//		for (int i = 0; i < usernameList.length(); i++) {
-//			username = usernameList.getString(i);
-//			tempUser = getOnlineUser(username);
-//			user = new JSONObject();
-//			user.put("username", tempUser.get("username"));
-//			user.put("displayName", tempUser.get("displayName"));
-//			user.put("cash", tempUser.getInt("cash"));
-//			if (user != null) {
-//				friends.put(user);
-//			} else {
-//				offlineUsers.put(username);
-//			}
-//		}
-//		// TO DO: get offline user from database
-//
-//		return friends;
-//	}
 	
-//	public static void addFriend(String username, String fUsername, JSONObject out) throws JSONException {
-//		JSONObject user = getOnlineUser(username);
-//		if (user != null) {
-//			JSONArray friends = user.getJSONArray("friends");
-//
-//			int friendNumb = friends.length();
-//			if (friendNumb == 0) {
-//				friends.put(fUsername);
-//				out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
-//				out.put("fUsername", fUsername);
-//			} else {
-//				boolean isFriend = false;
-//				for (int i = 0; i < friendNumb; i++) {
-//					if (friends.getString(i).equals(fUsername)) {
-//						isFriend = true;
-//					}
-//				}
-//				if (!isFriend) {
-//					friends.put(fUsername);
-//					out.put(ErrorCode.PARAM, ErrorCode.User.NULL);
-//					out.put("fUsername", fUsername);
-//				} else {
-//					out.put(ErrorCode.PARAM, ErrorCode.User.ALREADY_FRIEND);
-//				}
-//			}
-//		} else {
-//			out.put(ErrorCode.PARAM, ErrorCode.User.CANT_FIND_USER);
-//		}
-//	}
+	public static void markRemoveUser(OnlineUser onlineUserClass) {
+		onlineUserClass.SetExpiredTime(System.currentTimeMillis() + GameConstants.REMOVE_CACHE_USER_MILI);
+		Util.log("-----------markRemoveUser OnlineUser: " + countOnlineUSer());
+	}
+	
+	public static void saveAndClearExpiredCacheUser() {
+		OnlineUser tempUser;
+		boolean isExpired;
+		for (Map.Entry<String, OnlineUser> map : onlineUsers.entrySet()) {
+			tempUser = map.getValue();
+			isExpired = tempUser.IsExpired();
+			Util.log("+++" + tempUser.username + " expired = " + tempUser.IsExpired() + " shouldSave = " + tempUser.ShouldSaveToDB());
+			if (isExpired || tempUser.ShouldSaveToDB()) {
+				saveUserToDB(map.getValue(), false);
+				if (isExpired && sfsApi.getUserByName(tempUser.username) == null) {
+					onlineUsers.remove(map.getKey());
+				}
+			}
+		}
+		Util.log("-----------clearExpiredCacheUser Online Users: " + countOnlineUSer());
+	}
 	
 	public static JSONArray GetUsernamesByFbIds(JSONArray facebookIds) throws JSONException {
 		
@@ -801,7 +776,7 @@ public class UserManager {
 		// add user to online list if register successed
     if (errorCode == ErrorCode.User.NULL) {
   		addUser(username, user);
-  		saveUserToDB(username);
+  		saveUserToDB(username, false);
     }
 		return errorCode;
 	}
@@ -907,8 +882,8 @@ public class UserManager {
 	public static void addAdminMessageToOnlineUsers(JSONObject message, long createdAt) {
 		try {
 			JSONObject jsonData;
-			for (Map.Entry<String, JSONObject> map : onlineUsers.entrySet()) {
-				jsonData = map.getValue();
+			for (Map.Entry<String, OnlineUser> map : onlineUsers.entrySet()) {
+				jsonData = map.getValue().jsonData;
 				if (jsonData.getLong("lastAdminMesTime") < createdAt) {
 					jsonData.put("lastAdminMesTime", createdAt);
 					addMessageToUserInbox(jsonData, message);
@@ -920,15 +895,16 @@ public class UserManager {
 		}
 	}
 	
-	public static void saveUserToDB(String username) {
-		JSONObject user = getOnlineUser(username);
+	public static void saveUserToDB(OnlineUser onlineUserClass, boolean markAsRemove) {
 		IDBManager dbManager = ClientRequestHandler.zone.getDBManager();
 		Connection connection = null;
 		PreparedStatement updateStatement = null;
-		if (user == null) {
-  		Util.log("UserManager saveUserToDB CANT FIND USER IN CACHE " + username);
+		if (onlineUserClass == null || onlineUserClass.jsonData == null) {
+  		Util.log("UserManager saveUserToDB CANT FIND USER IN CACHE ");
 			return;
 		}
+		
+		JSONObject user = onlineUserClass.jsonData;
 		
 		try {
 			connection = dbManager.getConnection();
@@ -953,9 +929,16 @@ public class UserManager {
 			updateStatement.setLong(14, user.getLong("lastInboxTime"));
 			updateStatement.setLong(15, user.getLong("lastReadInboxTime"));
 			updateStatement.setLong(16, user.getLong("lastAdminMesTime"));
-			updateStatement.setString(17, username);
+			updateStatement.setString(17, user.getString("username"));
 	    // Execute query
 			updateStatement.executeUpdate();
+			
+			// update lastSaveToDB in cache
+			onlineUserClass.SetLastSavedToDB(System.currentTimeMillis());
+			// mark as remove to be removed in cache
+			if (markAsRemove) {
+				markRemoveUser(onlineUserClass);
+			}
 		} catch (SQLException | JSONException e) {
   		Util.log("UserManager saveUserToDB SQLException | JSONException: " + e.toString());
   		// TO DO save exception to exception log file
@@ -974,6 +957,11 @@ public class UserManager {
 	  		Util.log("UserManager saveUserToDB 2 SQLException: " + e.toString());
 			}
 		}
+	}
+	
+	public static void saveUserToDB(String username, boolean markAsRemove) {
+		OnlineUser onlineUserClass = getOnlineUserClass(username);
+		saveUserToDB(onlineUserClass, markAsRemove);
 	}
 	
 	// create jsonData for user to put in cache

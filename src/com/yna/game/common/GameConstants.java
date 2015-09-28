@@ -17,11 +17,15 @@ public class GameConstants {
 	public static int DAILY_REWARD_CASH = 50000;
 	public static int INVITE_MESSAGE_EXPIRED_SECONDS = 50;
 	public static int LOBBY_MAX_USERS = 3000;
+	public static long REMOVE_CACHE_USER_MILI = 60000;
+	public static long CLEAR_CACHE_USERS_INTERVAL_MILI = 120000;
+	public static long SAVE_TO_DB_INTERVAL_MILI = 300000;
 
 	public static void init() {
 		try {
 			BufferedReader bufferedReader = new BufferedReader(new FileReader(System.getProperty("user.dir") + GAMECONSTANTS_FILE_PATH));
 			String line = bufferedReader.readLine();
+			Util.log("==========GameConstants Init==========");
 			while (line != null) {
 				String[] arr = line.split("=");
 				if (arr.length >= 2) {
@@ -47,11 +51,22 @@ public class GameConstants {
 						case "LOBBY_MAX_USERS":
 							LOBBY_MAX_USERS = Integer.parseInt(arr[1].trim());
 							break;
+						case "REMOVE_CACHE_USER_MILI":
+							REMOVE_CACHE_USER_MILI = Long.parseLong(arr[1].trim());
+							break;
+						case "CLEAR_CACHE_USERS_INTERVAL_MILI":
+							CLEAR_CACHE_USERS_INTERVAL_MILI = Long.parseLong(arr[1].trim());
+							break;
+						case "SAVE_TO_DB_INTERVAL_MILI":
+							SAVE_TO_DB_INTERVAL_MILI = Long.parseLong(arr[1].trim());
+							break;
 					}
 				}
+				Util.log(line);
 				line = bufferedReader.readLine();
 			}
 			bufferedReader.close();
+			Util.log("==========END GameConstants Init==========");
 		} catch (IOException e) {
 			Util.log("GameConstants:IOException:"	+ e.toString());
 		}

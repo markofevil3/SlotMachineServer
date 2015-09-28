@@ -34,6 +34,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 	
 	private final int ROOM_NAME_LENGTH = 5;
 	private final int MAX_USERS_PER_ROOM = 5;
+	private final int BIG_WIN_MULTIPLY_DETECT = 30;
 	
 	@Override
 	protected void handleRequest(String commandId, User player, ISFSObject params, JSONObject out) {
@@ -247,7 +248,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 
 			out = GameType.UpdateGameVariable(gameType, player, gameRoom, sfsApi, out, totalWin);
 			
-			out.put("bWin", totalWin > totalCost * 10);
+			out.put("bWin", totalWin > totalCost * BIG_WIN_MULTIPLY_DETECT);
 			if (isFreeSpin) {
 				totalCost = 0;
 			}
