@@ -3,6 +3,7 @@ package com.yna.game.slotmachine.models;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Random;
 
 import com.yna.game.common.Util;

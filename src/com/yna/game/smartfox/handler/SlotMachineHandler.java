@@ -174,6 +174,7 @@ public class SlotMachineHandler extends ClientRequestHandler {
 				}
 			}
 			out.put("gameType", gameType);
+			out.put("payouts", GameType.GetPayoutString(gameType));
 		} catch (Exception exception) {
 			trace("handleJoinRoomCommand:" + exception.toString());
 		}

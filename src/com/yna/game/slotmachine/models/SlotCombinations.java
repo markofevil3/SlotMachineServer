@@ -114,6 +114,19 @@ public class SlotCombinations {
   	return null;
   }
   
+  public String GetPayoutString() {
+  	int[][] tempPayouts = GetPayOuts();
+  	String returnData = "";
+  	for (int i = 0; i < tempPayouts.length; i++) {
+  		returnData += Util.IntArrayToString(tempPayouts[i]);
+  		if (i != tempPayouts.length - 1) {
+  			returnData += ";";
+  		}
+  	}
+  	tempPayouts = null;
+  	return returnData;
+  }
+  
   public int[] GetItemRate() {
   	return null;
   }

@@ -201,6 +201,18 @@ public class GameType {
 //		return null;
 //	}
 
+  public static String GetPayoutString(String gameType) {
+		switch(gameType) {
+		case SLOT_TYPE_DRAGON:
+			return slotDragonInstance.GetPayoutString();
+		case SLOT_TYPE_PIRATE:
+			return slotPirateInstance.GetPayoutString();
+		case SLOT_TYPE_ZOMBIE:
+			return slotZombieInstance.GetPayoutString();
+		}
+  	return null;
+  }
+  
 	public static JSONObject SetGameVariable(String gameType, User player, Room room, SFSApi sfsApi) {
 		switch(gameType) {
 		case SLOT_TYPE_DRAGON:
